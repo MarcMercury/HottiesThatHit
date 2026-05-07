@@ -3,7 +3,10 @@
 //   npm run scrape:all
 // Loads .env.local automatically via dotenv.
 
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
+loadEnv({ path: '.env.local' });
+loadEnv(); // also load plain .env if present
+
 import { laRecScraper } from './la_rec';
 import { runScraper } from './runner';
 import { Scraper } from '../lib/types';
