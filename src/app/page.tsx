@@ -1,112 +1,112 @@
-// Mobile-first home page. Lists available slots grouped by facility.
-// Server component — fetches from our API route.
+// Landing page — hero, value props, CTA. Themed to the HTH logo.
+import Image from 'next/image';
+import Link from 'next/link';
 
-import { format, addDays } from 'date-fns';
-
-interface Slot {
-  id: string;
-  court_number: string | null;
-  start_time: string;
-  end_time: string;
-  price_cents: number | null;
-  booking_url: string | null;
-  facility: {
-    id: string;
-    name: string;
-    city: string | null;
-    source_id: string;
-    surface: string | null;
-    lights: boolean;
-  };
-}
-
-async function fetchSlots(date: string): Promise<Slot[]> {
-  // Use absolute URL on the server. NEXT_PUBLIC_SITE_URL = http://localhost:3000 locally.
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-  const res = await fetch(`${base}/api/slots?date=${date}`, { cache: 'no-store' });
-  if (!res.ok) return [];
-  const json = await res.json();
-  return json.slots ?? [];
-}
-
-export default async function Home({ searchParams }: { searchParams: { date?: string } }) {
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const date = searchParams.date ?? today;
-  const slots = await fetchSlots(date);
-
-  // Group by facility for a cleaner mobile view.
-  const byFacility = new Map<string, { facility: Slot['facility']; slots: Slot[] }>();
-  for (const s of slots) {
-    const k = s.facility.id;
-    if (!byFacility.has(k)) byFacility.set(k, { facility: s.facility, slots: [] });
-    byFacility.get(k)!.slots.push(s);
-  }
-
-  const dateOptions = Array.from({ length: 8 }, (_, i) => {
-    const d = addDays(new Date(), i);
-    return { value: format(d, 'yyyy-MM-dd'), label: format(d, 'EEE M/d') };
-  });
-
+export default function Home() {
   return (
-    <main className="min-h-screen bg-zinc-50 text-zinc-900">
-      <header className="sticky top-0 bg-white border-b border-zinc-200 px-4 py-3">
-        <h1 className="text-lg font-semibold">Hotties That Hit</h1>
-        <p className="text-xs text-zinc-500">Every open court in LA. One screen.</p>
-        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-          {dateOptions.map((d) => (
-            <a
-              key={d.value}
-              href={`/?date=${d.value}`}
-              className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap ${
-                d.value === date ? 'bg-emerald-600 text-white' : 'bg-zinc-100 text-zinc-700'
-              }`}
-            >
-              {d.label}
-            </a>
-          ))}
-        </div>
-      </header>
-
-      <section className="px-4 py-3">
-        {byFacility.size === 0 ? (
-          <p className="text-zinc-500 text-sm py-8 text-center">
-            No availability found for {format(new Date(date), 'EEEE, MMM d')}.
-            <br />
-            (Or scrapers haven&apos;t run yet — try <code>npm run scrape:la-rec</code>.)
-          </p>
-        ) : (
-          Array.from(byFacility.values()).map(({ facility, slots }) => (
-            <div key={facility.id} className="mb-4 bg-white rounded-lg border border-zinc-200 p-3">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h2 className="font-semibold">{facility.name}</h2>
-                  <p className="text-xs text-zinc-500">
-                    {facility.city ?? ''}{facility.surface ? ` · ${facility.surface}` : ''}{facility.lights ? ' · lights' : ''}
-                  </p>
-                </div>
-                <span className="text-xs px-2 py-0.5 bg-zinc-100 rounded">{facility.source_id}</span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {slots.slice(0, 30).map((s) => (
-                  <a
-                    key={s.id}
-                    href={s.booking_url ?? '#'}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded hover:bg-emerald-100"
-                  >
-                    {format(new Date(s.start_time), 'h:mma').toLowerCase()}
-                    {s.court_number ? ` · ${s.court_number}` : ''}
-                  </a>
-                ))}
-                {slots.length > 30 && (
-                  <span className="text-xs text-zinc-500 px-2 py-1">+{slots.length - 30} more</span>
-                )}
-              </div>
+    <main>
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-neon-radial pointer-events-none" />
+        <div className="relative mx-auto max-w-6xl px-4 pt-12 pb-20 md:pt-20 md:pb-28 grid md:grid-cols-2 gap-10 items-center">
+          <div>
+            <span className="chip">Now serving Los Angeles</span>
+            <h1 className="mt-4 font-display text-6xl md:text-7xl text-white neon-text leading-[0.95]">
+              <span className="text-hot-400">Hotties</span>
+              <br />
+              <span className="text-white">that Hit.</span>
+            </h1>
+            <p className="mt-5 text-lg text-white/75 max-w-xl">
+              Every open tennis court in LA — public, private, lit, clay — on one screen.
+              Find courts, find players, hit harder.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link href="/slots" className="btn-primary">
+                See tonight&apos;s open courts
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </Link>
+              <Link href="/players" className="btn-ghost">Find a hitting partner</Link>
             </div>
-          ))
-        )}
+            <div className="mt-8 flex items-center gap-6 text-xs text-white/50">
+              <div><span className="text-hot-300 font-bold text-base">60+</span> facilities</div>
+              <div><span className="text-hot-300 font-bold text-base">2,000+</span> daily slots</div>
+              <div><span className="text-hot-300 font-bold text-base">Live</span> updated hourly</div>
+            </div>
+          </div>
+
+          <div className="relative mx-auto">
+            <div className="absolute -inset-8 rounded-full bg-hot-500/30 blur-3xl" />
+            <Image
+              src="/logo.png"
+              alt="Hotties That Hit logo"
+              width={520}
+              height={520}
+              priority
+              className="relative drop-shadow-[0_10px_40px_rgba(255,31,143,0.45)]"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 py-12">
+        <h2 className="font-display text-3xl text-white mb-6">The whole court, covered.</h2>
+        <div className="grid gap-4 md:grid-cols-3">
+          <FeatureCard href="/slots" title="Open Slots" tag="Live"
+            desc="Every reservable court in LA, sorted by what's actually free right now." emoji="🎾" />
+          <FeatureCard href="/courts" title="Find a Court" tag="Map"
+            desc="Filter by surface, lights, location, fee. Save your favorites." emoji="📍" />
+          <FeatureCard href="/players" title="Find Players" tag="Soon"
+            desc="Match with hitting partners by NTRP, schedule, and neighborhood." emoji="💗" />
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 py-10">
+        <div className="card p-6 md:p-8">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-hot-300">Coverage</p>
+              <p className="mt-1 text-white/90 text-lg">
+                LA Rec & Parks · Beverly Hills · Santa Monica · Pasadena · UCLA · USC
+              </p>
+              <p className="text-white/50 text-sm">SF Bay & NYC dropping next.</p>
+            </div>
+            <Link href="/slots" className="btn-primary">Play tonight</Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 py-16">
+        <div className="relative overflow-hidden rounded-3xl border border-hot-500/40 bg-gradient-to-br from-hot-700/30 via-ink-soft to-ink p-10 md:p-14 text-center">
+          <div className="absolute inset-0 bg-neon-radial pointer-events-none" />
+          <h3 className="relative font-display text-4xl md:text-5xl text-white neon-text">
+            Stop refreshing 12 booking sites.
+          </h3>
+          <p className="relative mt-3 text-white/70 max-w-xl mx-auto">
+            We do it for you. One screen, every court, every night. Pink courts only.
+          </p>
+          <div className="relative mt-6">
+            <Link href="/slots" className="btn-primary">Show me courts →</Link>
+          </div>
+        </div>
       </section>
     </main>
+  );
+}
+
+function FeatureCard({ href, title, desc, tag, emoji }: {
+  href: string; title: string; desc: string; tag?: string; emoji: string;
+}) {
+  return (
+    <Link href={href} className="card group p-5 transition hover:border-hot-500/60 hover:shadow-glow-sm">
+      <div className="flex items-start justify-between">
+        <span className="text-3xl">{emoji}</span>
+        {tag && <span className="chip">{tag}</span>}
+      </div>
+      <h3 className="mt-4 font-semibold text-white text-lg">{title}</h3>
+      <p className="mt-1 text-sm text-white/60">{desc}</p>
+      <p className="mt-4 text-xs text-hot-300 group-hover:text-hot-200">Open →</p>
+    </Link>
   );
 }

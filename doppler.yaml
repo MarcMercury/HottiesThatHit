@@ -1,0 +1,13 @@
+setup:
+  - project: hottiesthathit
+    config: prd
+    path: .
+{
+  "setup": [
+    {
+      "project": "hottiesthathit",
+      "config": "prd",
+      "path": "."
+    }
+  ]
+}

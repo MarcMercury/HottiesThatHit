@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     .from('slots')
     .select(`
       id, court_number, start_time, end_time, available, price_cents, booking_url,
-      facility:facilities!inner ( id, name, address, city, source_id, num_courts, lights, surface )
+      facility:facilities!inner ( id, name, address, city, source_id, num_courts, lights, surface, lat, lng )
     `)
     .eq('available', true)
     .order('start_time', { ascending: true })

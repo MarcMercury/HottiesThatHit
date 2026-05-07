@@ -3,17 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "doppler run -- next dev",
+    "dev:no-doppler": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "scrape:la-rec": "tsx src/scrapers/run.ts la_rec",
-    "scrape:all": "tsx src/scrapers/run.ts all"
+    "scrape:la-rec": "doppler run -- tsx src/scrapers/run.ts la_rec",
+    "scrape:all": "doppler run -- tsx src/scrapers/run.ts all",
+    "env:pull": "doppler secrets download --no-file --format env > .env.local"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
     "date-fns": "^3.6.0",
     "next": "^14.2.33",
+    "openai": "^6.37.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
