@@ -1,57 +1,80 @@
+import Link from 'next/link';
 import { PageHeader } from '@/components/PageHeader';
+import { getServiceClient } from '@/lib/supabase';
 
 export const metadata = { title: 'Find Players · Hotties That Hit' };
+export const dynamic = 'force-dynamic';
 
-export default function PlayersPage() {
+interface PlayerRow {
+  username: string;
+  city: string | null;
+  ntrp_rating: number | null;
+  image_url_1: string | null;
+}
+
+export default async function PlayersPage() {
+  const supabase = getServiceClient();
+  const { data } = await supabase
+    .from('profiles')
+    .select('username, city, ntrp_rating, image_url_1')
+    .order('created_at', { ascending: false })
+    .limit(60);
+
+  const players = (data ?? []) as PlayerRow[];
+
   return (
     <main>
       <PageHeader
-        eyebrow="Coming soon"
+        eyebrow="Players"
         title="Find Players"
-        subtitle="Match with hitting partners by NTRP rating, schedule, and neighborhood. We're building it now — get on the list."
+        subtitle="Hitting partners on Hotties That Hit. Browse by NTRP and neighborhood."
       />
 
-      <section className="mx-auto max-w-3xl px-4 py-10">
-        <div className="card p-6 md:p-8">
-          <h2 className="font-display text-2xl text-white">Get early access</h2>
-          <p className="mt-2 text-white/65 text-sm">
-            We&apos;ll ping you the second matching goes live. No spam, no algorithms,
-            just hitting partners who actually show up.
-          </p>
-
-          <form
-            action="https://formspree.io/f/placeholder"
-            method="POST"
-            className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto]"
-          >
-            <input
-              type="email"
-              name="email"
-              required
-              placeholder="you@email.com"
-              className="rounded-full border border-ink-line bg-ink px-4 py-2.5 text-sm
-                         text-white placeholder:text-white/40 focus:outline-none
-                         focus:border-hot-500 focus:ring-2 focus:ring-hot-500/30"
-            />
-            <button type="submit" className="btn-primary">Notify me</button>
-          </form>
-
-          <div className="mt-8 grid gap-4 sm:grid-cols-3 text-sm">
-            <Feature title="NTRP-aware" desc="2.5 to 5.5+. We respect rating gaps." />
-            <Feature title="Neighborhood-first" desc="Westside, Valley, Eastside — your courts." />
-            <Feature title="Reliable only" desc="No-shows lose access. Period." />
+      <section className="mx-auto max-w-5xl px-4 py-10">
+        {players.length === 0 ? (
+          <div className="card p-8 text-center text-white/60">
+            No players yet.{' '}
+            <Link href="/signup" className="text-hot-300 hover:text-hot-200">
+              Be the first to sign up.
+            </Link>
           </div>
-        </div>
+        ) : (
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {players.map((p) => (
+              <li key={p.username}>
+                <Link
+                  href={`/players/${p.username}`}
+                  className="card flex items-center gap-4 p-4 hover:border-hot-500/60 transition"
+                >
+                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border border-ink-line bg-ink-soft">
+                    {p.image_url_1 ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.image_url_1}
+                        alt={p.username}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-white/40 text-xs">
+                        ?
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-white font-semibold truncate">@{p.username}</p>
+                    <p className="text-xs text-white/60 truncate">
+                      {p.city || 'LA'} ·{' '}
+                      <span className="text-hot-300">
+                        NTRP {p.ntrp_rating != null ? Number(p.ntrp_rating).toFixed(1) : '—'}
+                      </span>
+                    </p>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </main>
-  );
-}
-
-function Feature({ title, desc }: { title: string; desc: string }) {
-  return (
-    <div className="rounded-xl border border-ink-line bg-ink-soft/60 p-4">
-      <p className="text-hot-300 font-semibold">{title}</p>
-      <p className="text-white/60 text-xs mt-1">{desc}</p>
-    </div>
   );
 }

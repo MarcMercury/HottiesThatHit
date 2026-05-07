@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Logo } from './Logo';
+import { useAuth } from '@/lib/auth-context';
 
 const links = [
   { href: '/slots', label: 'Open Slots' },
@@ -14,7 +15,15 @@ const links = [
 
 export function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const { user, profile, signOut, loading } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    setOpen(false);
+    router.push('/');
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink-line/80 bg-ink/70 backdrop-blur-md">
@@ -38,7 +47,48 @@ export function Navbar() {
               </Link>
             );
           })}
-          <Link href="/slots" className="btn-primary ml-2">Play tonight</Link>
+          {profile?.is_admin && (
+            <Link
+              href="/admin"
+              className={`rounded-full px-3 py-1.5 text-sm transition ${
+                pathname?.startsWith('/admin')
+                  ? 'bg-hot-500/20 text-white'
+                  : 'text-white/70 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              Admin
+            </Link>
+          )}
+
+          {!loading && !user && (
+            <>
+              <Link
+                href="/login"
+                className="rounded-full px-3 py-1.5 text-sm text-white/70 hover:text-white hover:bg-white/5"
+              >
+                Log in
+              </Link>
+              <Link href="/signup" className="btn-primary ml-2">
+                Sign up
+              </Link>
+            </>
+          )}
+          {!loading && user && (
+            <>
+              <Link
+                href="/profile"
+                className="rounded-full px-3 py-1.5 text-sm text-white/80 hover:text-white hover:bg-white/5"
+              >
+                {profile?.username ? `@${profile.username}` : 'Profile'}
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="rounded-full px-3 py-1.5 text-sm text-white/60 hover:text-white hover:bg-white/5"
+              >
+                Sign out
+              </button>
+            </>
+          )}
         </nav>
 
         <button
@@ -68,13 +118,50 @@ export function Navbar() {
               {l.label}
             </Link>
           ))}
-          <Link
-            href="/slots"
-            onClick={() => setOpen(false)}
-            className="btn-primary w-full mt-2"
-          >
-            Play tonight
-          </Link>
+          {profile?.is_admin && (
+            <Link
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+            >
+              Admin
+            </Link>
+          )}
+          {!loading && !user && (
+            <>
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/signup"
+                onClick={() => setOpen(false)}
+                className="btn-primary w-full mt-2"
+              >
+                Sign up
+              </Link>
+            </>
+          )}
+          {!loading && user && (
+            <>
+              <Link
+                href="/profile"
+                onClick={() => setOpen(false)}
+                className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+              >
+                {profile?.username ? `@${profile.username}` : 'Profile'}
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="block w-full text-left rounded-md px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5"
+              >
+                Sign out
+              </button>
+            </>
+          )}
         </nav>
       )}
     </header>

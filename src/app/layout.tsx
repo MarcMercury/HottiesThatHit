@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Pacifico } from 'next/font/google';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { AuthProvider } from '@/lib/auth-context';
 
 const sans = Inter({
   subsets: ['latin'],
@@ -38,9 +39,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${sans.variable} ${display.variable}`}>
       <body className="font-sans">
-        <Navbar />
-        {children}
-        <Footer />
+        <AuthProvider>
+          <Navbar />
+          {children}
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );
