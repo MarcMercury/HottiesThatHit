@@ -1,27 +1,48 @@
 // Vercel cron endpoint. Scheduled via vercel.json.
 // Vercel calls this with the CRON_SECRET in the Authorization header.
+//
+// LA-area municipal tennis has no public booking API (LA Parks migrated off
+// ActiveNet; Santa Monica & Culver City expose no tennis resources). Until a
+// real source is wired, this endpoint is a no-op that respects the `enabled`
+// flag on hotties.sources rows.
 
 import { NextRequest, NextResponse } from 'next/server';
-import { laRecScraper } from '../../../../scrapers/la_rec';
-import { runScraper } from '../../../../scrapers/runner';
+import { getServiceClient } from '../../../../lib/supabase';
+// import { laRecScraper } from '../../../../scrapers/la_rec';
+// import { runScraper } from '../../../../scrapers/runner';
 
 export const maxDuration = 60; // seconds. Requires Vercel Pro for >10s.
 export const dynamic = 'force-dynamic';
 
+const RUN_LIST: Array<{ id: string; run: () => Promise<unknown> }> = [
+  // { id: 'la_rec', run: () => runScraper(laRecScraper, 7) },
+];
+
 export async function GET(req: NextRequest) {
-  // Vercel cron sends `Authorization: Bearer <CRON_SECRET>` automatically when configured.
   const auth = req.headers.get('authorization');
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
+  const supabase = getServiceClient();
+  const { data: enabledRows } = await supabase
+    .from('sources')
+    .select('id')
+    .eq('enabled', true);
+  const enabled = new Set((enabledRows ?? []).map((r) => r.id as string));
+
   const results: Record<string, unknown> = {};
-  try {
-    results.la_rec = await runScraper(laRecScraper, 7);
-  } catch (err) {
-    results.la_rec = { error: err instanceof Error ? err.message : String(err) };
+  for (const s of RUN_LIST) {
+    if (!enabled.has(s.id)) {
+      results[s.id] = { skipped: 'source disabled' };
+      continue;
+    }
+    try {
+      results[s.id] = await s.run();
+    } catch (err) {
+      results[s.id] = { error: err instanceof Error ? err.message : String(err) };
+    }
   }
-  // Add more scrapers here as we build them.
 
   return NextResponse.json({ ok: true, results });
 }
