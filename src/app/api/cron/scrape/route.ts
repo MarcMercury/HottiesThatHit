@@ -1,21 +1,19 @@
 // Vercel cron endpoint. Scheduled via vercel.json.
 // Vercel calls this with the CRON_SECRET in the Authorization header.
 //
-// LA-area municipal tennis has no public booking API (LA Parks migrated off
-// ActiveNet; Santa Monica & Culver City expose no tennis resources). Until a
-// real source is wired, this endpoint is a no-op that respects the `enabled`
-// flag on hotties.sources rows.
+// Each scraper's source row in hotties.sources controls whether it runs.
+// To pause a source: set hotties.sources.enabled = false.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '../../../../lib/supabase';
-// import { laRecScraper } from '../../../../scrapers/la_rec';
-// import { runScraper } from '../../../../scrapers/runner';
+import { laRecScraper } from '../../../../scrapers/la_rec';
+import { runScraper } from '../../../../scrapers/runner';
 
-export const maxDuration = 60; // seconds. Requires Vercel Pro for >10s.
+export const maxDuration = 300; // seconds. Vercel Pro allows up to 300s; LA scrape needs ~120s.
 export const dynamic = 'force-dynamic';
 
 const RUN_LIST: Array<{ id: string; run: () => Promise<unknown> }> = [
-  // { id: 'la_rec', run: () => runScraper(laRecScraper, 7) },
+  { id: 'la_rec', run: () => runScraper(laRecScraper, 8) },
 ];
 
 export async function GET(req: NextRequest) {
