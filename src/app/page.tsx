@@ -1,6 +1,6 @@
 // Landing page — hero, value props, CTA. Themed to the HTH logo.
 import Link from 'next/link';
-import StaticHero3D from '@/components/StaticHero3D';
+import Image from 'next/image';
 
 export default function Home() {
   return (
@@ -36,8 +36,16 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="relative mx-auto">
-            <StaticHero3D src="/hero.glb" poster="/logo.png" alt="Hotties That Hit" size={520} />
+          <div className="relative mx-auto" style={{ width: 520, height: 520, maxWidth: '100%' }}>
+            <div className="absolute -inset-8 rounded-full bg-hot-500/30 blur-3xl pointer-events-none" />
+            <Image
+              src="/hero.png"
+              alt="Hotties That Hit"
+              width={520}
+              height={520}
+              priority
+              className="relative object-contain drop-shadow-[0_10px_40px_rgba(255,31,143,0.45)]"
+            />
           </div>
         </div>
       </section>
