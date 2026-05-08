@@ -53,8 +53,8 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-4 py-12">
         <h2 className="font-display text-3xl text-white mb-6">The whole court, covered.</h2>
         <div className="grid gap-4 md:grid-cols-3">
-          <FeatureCard href="/slots" title="Open Slots" tag="Live"
-            desc="Every reservable court in LA, sorted by what's actually free right now." emoji="🎾" />
+          <FeatureCard href="/slots" title="Reservations" tag="Links"
+            desc="Every public court in LA, alphabetical, with a one-tap link to the operator's reservation page." emoji="🎾" />
           <FeatureCard href="/courts" title="Find a Court" tag="Map"
             desc="Filter by surface, lights, location, fee. Save your favorites." emoji="📍" />
           <FeatureCard href="/players" title="Find Players" tag="Soon"

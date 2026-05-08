@@ -7,7 +7,7 @@ import { Logo } from './Logo';
 import { useAuth } from '@/lib/auth-context';
 
 const links = [
-  { href: '/slots', label: 'Open Slots' },
+  { href: '/slots', label: 'Reservations' },
   { href: '/courts', label: 'Find a Court' },
   { href: '/players', label: 'Find Players' },
   { href: '/matrix', label: 'Hot vs Hit' },

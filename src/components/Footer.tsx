@@ -13,7 +13,7 @@ export function Footer() {
         <div>
           <p className="text-white/90 font-semibold mb-2">Play</p>
           <ul className="space-y-1.5 text-white/60">
-            <li><Link href="/slots" className="hover:text-hot-300">Open Slots</Link></li>
+            <li><Link href="/slots" className="hover:text-hot-300">Reservations</Link></li>
             <li><Link href="/courts" className="hover:text-hot-300">Find a Court</Link></li>
             <li><Link href="/players" className="hover:text-hot-300">Find Players</Link></li>
           </ul>
