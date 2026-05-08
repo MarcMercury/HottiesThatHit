@@ -54,7 +54,7 @@ const ZONES: Zone[] = [
   // ABOVE the line — looks > game
   {
     key: 'no-go',
-    title: 'No Go Zone',
+    title: 'Just Hook Up Zone',
     blurb: 'Hot. Cannot hit. Will rage-quit at 2-2.',
     rect: [1.0, 2.5, 7, 10],
     tone: 'danger',
