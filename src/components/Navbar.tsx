@@ -10,6 +10,7 @@ const links = [
   { href: '/slots', label: 'Open Slots' },
   { href: '/courts', label: 'Find a Court' },
   { href: '/players', label: 'Find Players' },
+  { href: '/matrix', label: 'Hot vs Hit' },
   { href: '/about', label: 'About' },
 ];
 
