@@ -193,12 +193,22 @@ export default async function SlotsPage({
 
   const withSlots = facilities.filter((f) => f.slots.length > 0).length;
 
+  // Bucket facilities so the page leads with what you can actually act on
+  // *now*, instead of burying live availability under 100 drop-in parks.
+  const liveFacilities = facilities.filter((f) => f.slots.length > 0);
+  const onlineFacilities = facilities.filter(
+    (f) => f.slots.length === 0 && f.online_booking && !!f.booking_url,
+  );
+  const otherFacilities = facilities.filter(
+    (f) => f.slots.length === 0 && !(f.online_booking && f.booking_url),
+  );
+
   return (
     <main>
       <PageHeader
         eyebrow="Live availability"
         title="Open Slots"
-        subtitle="Pick a date and an LA area — see every court there, with bookable times when we have them."
+        subtitle="Live-scraped tee times from LA Rec & Parks, plus every other public court in the region with the operator's reservation link."
       />
 
       <section className="mx-auto max-w-6xl px-4 py-6">
@@ -285,109 +295,235 @@ export default async function SlotsPage({
               </p>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              {facilities.map((f) => {
-                const wx = weatherByFacility.get(f.id);
-                const dirHref = directionsUrl({
-                  destLat: f.lat ?? undefined,
-                  destLng: f.lng ?? undefined,
-                  destAddress:
-                    f.address ?? `${f.name}, ${f.city ?? 'Los Angeles'}`,
-                });
-                const slots = f.slots;
-                const slotBookHref = buildBookingHref(f.booking_url, date);
-                return (
-                  <div key={f.id} className="card p-4">
-                    <div className="flex items-start justify-between mb-3 gap-3">
-                      <div className="min-w-0">
-                        <h2 className="font-semibold text-white truncate">
-                          {f.name}
-                        </h2>
-                        <p className="text-xs text-white/50">
-                          {f.region ?? f.city ?? ''}
-                          {f.surface ? ` · ${f.surface}` : ''}
-                          {f.lights ? ' · lights' : ''}
-                          {f.num_courts ? ` · ${f.num_courts} courts` : ''}
-                        </p>
-                        {wx && (
-                          <p className="text-xs text-white/60 mt-1">
-                            <span aria-hidden>{wx.emoji}</span> {wx.label} ·{' '}
-                            {wx.lowF}°/{wx.highF}°
-                            {wx.precipPct > 20
-                              ? ` · ${wx.precipPct}% rain`
-                              : ''}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className="chip">{f.source_name}</span>
-                        <a
-                          href={dirHref}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs px-2 py-0.5 rounded-md border border-ink-line text-white/70 hover:text-white hover:border-hot-500/50"
-                        >
-                          Directions ↗
-                        </a>
-                      </div>
-                    </div>
-
-                    {slots.length > 0 ? (
-                      <>
-                        <p className="text-[11px] uppercase tracking-wide text-white/40 mb-1.5">
-                          Open times — tap to book
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {slots.slice(0, 30).map((s) => (
-                            <a
-                              key={s.id}
-                              href={slotBookHref ?? '#'}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-xs px-2.5 py-1 rounded-md bg-hot-500/15 text-hot-100
-                                         border border-hot-500/30 hover:bg-hot-500/30 hover:text-white transition"
-                            >
-                              {format(new Date(s.start_time), 'h:mma').toLowerCase()}
-                              {s.court_number ? ` · ${s.court_number}` : ''}
-                            </a>
-                          ))}
-                          {slots.length > 30 && (
-                            <span className="text-xs text-white/40 px-2 py-1">
-                              +{slots.length - 30} more
-                            </span>
-                          )}
-                        </div>
-                      </>
-                    ) : f.booking_url ? (
-                      <div className="flex items-center justify-between gap-3 rounded-md border border-ink-line bg-ink-soft/40 p-3">
-                        <p className="text-xs text-white/60">
-                          {f.online_booking
-                            ? 'Live availability not yet scraped — check the reservation site directly.'
-                            : f.category === 'Public Open'
-                              ? 'Free drop-in park · no online reservation system.'
-                              : 'No online booking — call ahead or visit the operator site.'}
-                        </p>
-                        <a
-                          href={slotBookHref ?? f.booking_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs whitespace-nowrap px-3 py-1.5 rounded-md bg-hot-500/20 text-hot-100 border border-hot-500/30 hover:bg-hot-500/40 hover:text-white transition"
-                        >
-                          Reserve ↗
-                        </a>
-                      </div>
-                    ) : (
-                      <div className="rounded-md border border-ink-line bg-ink-soft/40 p-3 text-xs text-white/50">
-                        Free drop-in park · first come, first served.
-                      </div>
-                    )}
+            <div className="space-y-10">
+              {/* ---------- 1. Live availability ---------- */}
+              <section>
+                <header className="flex items-baseline justify-between gap-3 mb-3">
+                  <h2 className="font-display text-2xl text-white">
+                    Live availability
+                  </h2>
+                  <span className="text-xs text-white/50">
+                    {liveFacilities.length}{' '}
+                    {liveFacilities.length === 1 ? 'facility' : 'facilities'} ·{' '}
+                    {totalSlots} open slots
+                  </span>
+                </header>
+                {liveFacilities.length === 0 ? (
+                  <div className="card p-6 text-sm text-white/60">
+                    No live-scraped availability for{' '}
+                    {format(new Date(date), 'EEE MMM d')}
+                    {region ? ` in ${region}` : ''}. Try another date, or use the
+                    facilities below.
                   </div>
-                );
-              })}
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {liveFacilities.map((f) => (
+                      <FacilityCard
+                        key={f.id}
+                        f={f}
+                        date={date}
+                        wx={weatherByFacility.get(f.id) ?? null}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              {/* ---------- 2. Online booking, no live data ---------- */}
+              {onlineFacilities.length > 0 && (
+                <section>
+                  <header className="flex items-baseline justify-between gap-3 mb-3">
+                    <h2 className="font-display text-2xl text-white">
+                      Online booking
+                    </h2>
+                    <span className="text-xs text-white/50">
+                      {onlineFacilities.length} more{' '}
+                      {onlineFacilities.length === 1 ? 'facility' : 'facilities'}{' '}
+                      with their own reservation site
+                    </span>
+                  </header>
+                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                    {onlineFacilities.map((f) => (
+                      <CompactFacilityCard key={f.id} f={f} date={date} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* ---------- 3. Drop-in / phone-only ---------- */}
+              {otherFacilities.length > 0 && (
+                <section>
+                  <details className="card p-4">
+                    <summary className="cursor-pointer text-sm text-white/80 hover:text-white">
+                      <span className="font-semibold">
+                        {otherFacilities.length} drop-in / phone-only courts
+                      </span>
+                      <span className="text-white/50">
+                        {' '}
+                        — public parks &amp; facilities without an online time grid
+                      </span>
+                    </summary>
+                    <ul className="mt-4 grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3 text-sm">
+                      {otherFacilities.map((f) => (
+                        <li
+                          key={f.id}
+                          className="flex items-center justify-between gap-2 py-1 border-b border-ink-line/60"
+                        >
+                          <span className="min-w-0 truncate">
+                            <span className="text-white/90">{f.name}</span>
+                            <span className="text-white/40 text-xs">
+                              {' · '}
+                              {f.region ?? f.city ?? 'LA'}
+                            </span>
+                          </span>
+                          <a
+                            href={directionsUrl({
+                              destLat: f.lat ?? undefined,
+                              destLng: f.lng ?? undefined,
+                              destAddress:
+                                f.address ?? `${f.name}, ${f.city ?? 'Los Angeles'}`,
+                            })}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[11px] text-hot-300 hover:text-hot-200 shrink-0"
+                          >
+                            Directions ↗
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                </section>
+              )}
             </div>
           )}
         </div>
       </section>
     </main>
+  );
+}
+
+// ---------- Cards ----------
+
+function FacilityCard({
+  f,
+  date,
+  wx,
+}: {
+  f: FacilityView;
+  date: string;
+  wx:
+    | {
+        highF: number;
+        lowF: number;
+        precipPct: number;
+        emoji: string;
+        label: string;
+      }
+    | null;
+}) {
+  const dirHref = directionsUrl({
+    destLat: f.lat ?? undefined,
+    destLng: f.lng ?? undefined,
+    destAddress: f.address ?? `${f.name}, ${f.city ?? 'Los Angeles'}`,
+  });
+  const slotBookHref = buildBookingHref(f.booking_url, date);
+  const slots = f.slots;
+
+  return (
+    <div className="card p-4">
+      <div className="flex items-start justify-between mb-3 gap-3">
+        <div className="min-w-0">
+          <h3 className="font-semibold text-white truncate">{f.name}</h3>
+          <p className="text-xs text-white/50">
+            {f.region ?? f.city ?? ''}
+            {f.surface ? ` · ${f.surface}` : ''}
+            {f.lights ? ' · lights' : ''}
+            {f.num_courts ? ` · ${f.num_courts} courts` : ''}
+          </p>
+          {wx && (
+            <p className="text-xs text-white/60 mt-1">
+              <span aria-hidden>{wx.emoji}</span> {wx.label} · {wx.lowF}°/
+              {wx.highF}°
+              {wx.precipPct > 20 ? ` · ${wx.precipPct}% rain` : ''}
+            </p>
+          )}
+        </div>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <span className="chip">{f.source_name}</span>
+          <a
+            href={dirHref}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs px-2 py-0.5 rounded-md border border-ink-line text-white/70 hover:text-white hover:border-hot-500/50"
+          >
+            Directions ↗
+          </a>
+        </div>
+      </div>
+
+      <p className="text-[11px] uppercase tracking-wide text-white/40 mb-1.5">
+        Open times — tap to book
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {slots.slice(0, 30).map((s) => (
+          <a
+            key={s.id}
+            href={slotBookHref ?? '#'}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs px-2.5 py-1 rounded-md bg-hot-500/15 text-hot-100 border border-hot-500/30 hover:bg-hot-500/30 hover:text-white transition"
+          >
+            {format(new Date(s.start_time), 'h:mma').toLowerCase()}
+            {s.court_number ? ` · ${s.court_number}` : ''}
+          </a>
+        ))}
+        {slots.length > 30 && (
+          <span className="text-xs text-white/40 px-2 py-1">
+            +{slots.length - 30} more
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CompactFacilityCard({ f, date }: { f: FacilityView; date: string }) {
+  const dirHref = directionsUrl({
+    destLat: f.lat ?? undefined,
+    destLng: f.lng ?? undefined,
+    destAddress: f.address ?? `${f.name}, ${f.city ?? 'Los Angeles'}`,
+  });
+  const bookHref = buildBookingHref(f.booking_url, date) ?? f.booking_url;
+  return (
+    <div className="card p-3 flex flex-col gap-2">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-white truncate">{f.name}</p>
+        <p className="text-xs text-white/50 truncate">
+          {f.region ?? f.city ?? ''}
+          {f.num_courts ? ` · ${f.num_courts} courts` : ''}
+        </p>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <a
+          href={dirHref}
+          target="_blank"
+          rel="noreferrer"
+          className="text-[11px] text-white/60 hover:text-white"
+        >
+          Directions ↗
+        </a>
+        {bookHref ? (
+          <a
+            href={bookHref}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs whitespace-nowrap px-2.5 py-1 rounded-md bg-hot-500/20 text-hot-100 border border-hot-500/30 hover:bg-hot-500/40 hover:text-white transition"
+          >
+            Reserve ↗
+          </a>
+        ) : null}
+      </div>
+    </div>
   );
 }
