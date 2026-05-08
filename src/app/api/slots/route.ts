@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
   const maxHour = sp.get('maxHour') ? Number(sp.get('maxHour')) : 22;
   const city = sp.get('city');
   const sourceId = sp.get('source');
+  const region = sp.get('region');
 
   const supabase = getServiceClient();
 
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest) {
     .from('slots')
     .select(`
       id, court_number, start_time, end_time, available, price_cents, booking_url,
-      facility:facilities!inner ( id, name, address, city, source_id, num_courts, lights, surface, lat, lng )
+      facility:facilities!inner ( id, name, address, city, source_id, num_courts, lights, surface, lat, lng, region, category, online_booking, facility_booking_url )
     `)
     .eq('available', true)
     .order('start_time', { ascending: true })
@@ -36,6 +37,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (city) q = q.eq('facility.city', city);
+  if (region) q = q.eq('facility.region', region);
   if (sourceId) q = q.eq('facility.source_id', sourceId);
 
   const { data, error } = await q;

@@ -263,8 +263,17 @@ export default function MatrixPage() {
               {/* Zone labels */}
               {ZONES.map((z) => {
                 const r = zoneRect(z);
-                const big = r.w > 80 && r.h > 50;
-                const fontSize = big ? 18 : 13;
+                const label = z.title.toUpperCase();
+                // Approximate width per char for our sans font at 1px size,
+                // then size down so the label fits inside the zone with padding.
+                const PAD_X = 12;
+                const CHAR_W = 0.62; // empirical for bold sans-serif
+                const maxByWidth = (r.w - PAD_X) / (label.length * CHAR_W);
+                const maxByHeight = r.h - 10;
+                const fontSize = Math.max(
+                  9,
+                  Math.min(15, Math.floor(Math.min(maxByWidth, maxByHeight))),
+                );
                 return (
                   <text
                     key={`lbl-${z.key}`}
@@ -273,11 +282,12 @@ export default function MatrixPage() {
                     textAnchor="middle"
                     dominantBaseline="middle"
                     fill="#ffffff"
-                    fontFamily="var(--font-display), cursive"
+                    fontFamily="var(--font-sans), system-ui, sans-serif"
+                    fontWeight={700}
                     fontSize={fontSize}
-                    style={{ letterSpacing: 0.5 }}
+                    style={{ letterSpacing: 0.6 }}
                   >
-                    {z.title.toUpperCase()}
+                    {label}
                   </text>
                 );
               })}
@@ -311,10 +321,12 @@ export default function MatrixPage() {
               >
                 <text
                   fill="#ffffff"
-                  fontFamily="var(--font-display), cursive"
-                  fontSize={16}
+                  fontFamily="var(--font-sans), system-ui, sans-serif"
+                  fontWeight={700}
+                  fontSize={13}
                   textAnchor="middle"
                   dy={-8}
+                  style={{ letterSpacing: 1 }}
                 >
                   HOT HIT LINE
                 </text>
