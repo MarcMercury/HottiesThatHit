@@ -59,18 +59,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (cancelled) return;
-      setSession(data.session);
-      await loadProfile(data.session?.user.id);
-      setLoading(false);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_evt, sess) => {
+
+    // Failsafe: if anything below hangs (corrupted localStorage, network),
+    // never leave the UI stuck on "Loading…".
+    const failsafe = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 4000);
+
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (cancelled) return;
+        setSession(data.session);
+        try {
+          await loadProfile(data.session?.user.id);
+        } catch {
+          /* profile load failure must not block the UI */
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('[auth] getSession failed', err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, sess) => {
+      // IMPORTANT: do NOT await Supabase calls inside this callback.
+      // supabase-js holds its auth lock while invoking listeners; any
+      // awaited supabase.* call here will deadlock (e.g. signInWithPassword
+      // never resolves and the login button hangs on "Signing in…").
       setSession(sess);
-      await loadProfile(sess?.user.id);
+      setLoading(false);
+      setTimeout(() => {
+        loadProfile(sess?.user.id).catch(() => {
+          /* swallow */
+        });
+      }, 0);
     });
+
     return () => {
       cancelled = true;
+      clearTimeout(failsafe);
       sub.subscription.unsubscribe();
     };
   }, [supabase, loadProfile]);
