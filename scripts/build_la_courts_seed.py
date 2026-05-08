@@ -27,28 +27,28 @@ BOOKING_OVERRIDES = {
     # LA County (ActiveNet)
     'Arcadia County Park':                ('la_county', True, 'https://anc.apm.activecommunities.com/lacountyparks'),
     'Frank G. Bonelli Regional Park':     ('la_county', True, 'https://anc.apm.activecommunities.com/lacountyparks'),
-    # Long Beach
-    'Billie Jean King Tennis Center':     ('long_beach', True, 'https://www.longbeach.gov/park/recreation-programs/sports/tennis/'),
-    'El Dorado Tennis Center':            ('long_beach', True, 'https://www.longbeach.gov/park/recreation-programs/sports/tennis/'),
-    'Lakewood Tennis Center':             ('lakewood',    True, 'https://www.lakewoodcity.org/Recreation-Community-Services/Recreation-Activities/Sports/Tennis'),
+    # Long Beach (ActiveNet — LB Rec Connect)
+    'Billie Jean King Tennis Center':     ('long_beach', True, 'https://anc.apm.activecommunities.com/lbparks/activity/search?activity_keyword=tennis'),
+    'El Dorado Tennis Center':            ('long_beach', True, 'https://anc.apm.activecommunities.com/lbparks/activity/search?activity_keyword=tennis'),
+    'Lakewood Tennis Center':             ('lakewood',    True, 'https://www.lakewoodca.gov/government/departments/recreation-and-community-services'),
     # South Bay
-    'Live Oak Park Tennis Center':        ('manhattan_beach', True, 'https://www.citymb.info/departments/parks-and-recreation/leisure-classes-and-camps/tennis'),
-    'Mira Costa High School':             ('manhattan_beach', True, 'https://www.citymb.info/departments/parks-and-recreation/leisure-classes-and-camps/tennis'),
-    'El Segundo Parks & Recreation Tennis Center': ('el_segundo', False, 'https://www.elsegundo.org/government/departments/recreation-parks/sports'),
-    'Alta Vista Tennis Center':           ('redondo_beach', True, 'https://www.redondo.org/depts/recreation/'),
+    'Live Oak Park Tennis Center':        ('manhattan_beach', True, 'https://www.manhattanbeach.gov/departments/parks-and-recreation/leisure-classes-and-camps/tennis'),
+    'Mira Costa High School':             ('manhattan_beach', True, 'https://www.manhattanbeach.gov/departments/parks-and-recreation/leisure-classes-and-camps/tennis'),
+    'El Segundo Parks & Recreation Tennis Center': ('el_segundo', True, 'https://secure.rec1.com/CA/el-segundo-ca/catalog'),
+    'Alta Vista Tennis Center':           ('redondo_beach', True, 'https://www.redondo.org/'),
     # San Fernando Valley
     'Calabasas Tennis and Swim Center':   ('calabasas', True, 'https://www.cityofcalabasas.com/government/community-services/calabasas-tennis-swim-center'),
     'Fremont Park Tennis Center':         ('glendale',  True, 'https://www.glendaleca.gov/government/departments/community-services-parks/parks-recreation/tennis-courts'),
     'Glorieta Park Tennis Center':        ('glendale',  True, 'https://www.glendaleca.gov/government/departments/community-services-parks/parks-recreation/tennis-courts'),
     # Pasadena / SGV
-    'San Marino Tennis Center':           ('san_marino', True, 'https://sanmarinotenniscenter.com/'),
+    'San Marino Tennis Center':           ('san_marino', True, 'https://secure.rec1.com/CA/san-marino-ca/catalog'),
     # Cerritos / Norwalk / La Mirada
-    'Cerritos Tennis Center':             ('cerritos', True, 'https://www.cerritos.us/RESIDENTS/recreation/tennis_center.php'),
-    'La Mirada Tennis Center':            ('la_mirada', True, 'https://www.cityoflamirada.org/our-city/departments-services/community-services/recreation-leisure-activities/tennis-center'),
-    'Independence Park Tennis Center':    ('downey',    True, 'https://www.downeyca.org/our-city/departments/parks-recreation'),
+    'Cerritos Tennis Center':             ('cerritos', True, 'https://www.cerritos.gov/'),
+    'La Mirada Tennis Center':            ('la_mirada', True, 'https://secure.rec1.com/CA/la-mirada-community-services/catalog'),
+    'Independence Park Tennis Center':    ('downey',    True, 'https://anc.apm.activecommunities.com/cityofdowney/activity/search?activity_keyword=tennis'),
     'Palm Park Tennis Center':            ('whittier',  True, 'https://cityofwhittier.org/government/parks-recreation-and-community-services'),
     # University / private public-access
-    'Los Angeles Tennis Center':          ('ucla',      False, 'https://uclatenniscenter.com/'),
+    'Los Angeles Tennis Center':          ('ucla',      False, 'https://recreation.ucla.edu/facilities/los-angeles-tennis-center'),
     # Santa Monica
     'Reed Park':                          ('santa_monica', True, 'https://www.santamonica.gov/places/parks/reed-park'),
 }
@@ -116,21 +116,26 @@ out.append("-- 2. Sources ------------------------------------------------------
 out.append(dedent("""\
 insert into hotties.sources (id, name, booking_url, scraper_type, enabled, notes) values
   ('la_county',       'LA County Parks',           'https://anc.apm.activecommunities.com/lacountyparks',       'activenet', false, 'County-run parks. ActiveNet booking.'),
-  ('long_beach',      'City of Long Beach',        'https://www.longbeach.gov/park/recreation-programs/sports/tennis/', 'custom', false, 'Billie Jean King + El Dorado.'),
-  ('lakewood',        'City of Lakewood',          'https://www.lakewoodcity.org/Recreation-Community-Services/Recreation-Activities/Sports/Tennis', 'custom', false, 'Lakewood Tennis Center.'),
-  ('manhattan_beach', 'City of Manhattan Beach',   'https://www.citymb.info/departments/parks-and-recreation',  'custom', false, 'Live Oak + Mira Costa.'),
-  ('redondo_beach',   'City of Redondo Beach',     'https://www.redondo.org/depts/recreation/',                 'custom', false, 'Alta Vista TC.'),
-  ('el_segundo',      'City of El Segundo',        'https://www.elsegundo.org/government/departments/recreation-parks/sports', 'custom', false, 'Phone reservations.'),
-  ('calabasas',       'City of Calabasas',         'https://www.cityofcalabasas.com/government/community-services/calabasas-tennis-swim-center', 'custom', false, 'PerfectMind booking.'),
+  ('long_beach',      'City of Long Beach',        'https://anc.apm.activecommunities.com/lbparks/activity/search?activity_keyword=tennis', 'activenet', false, 'ActiveNet (LB Rec Connect). Billie Jean King + El Dorado.'),
+  ('lakewood',        'City of Lakewood',          'https://www.lakewoodca.gov/government/departments/recreation-and-community-services', 'custom', false, 'Lakewood Tennis Center.'),
+  ('manhattan_beach', 'City of Manhattan Beach',   'https://www.manhattanbeach.gov/departments/parks-and-recreation/leisure-classes-and-camps/tennis', 'custom', false, 'Live Oak + Mira Costa.'),
+  ('redondo_beach',   'City of Redondo Beach',     'https://www.redondo.org/',                                  'custom', false, 'Alta Vista TC. Phone reservations primary.'),
+  ('el_segundo',      'City of El Segundo',        'https://secure.rec1.com/CA/el-segundo-ca/catalog',          'rec1',   false, 'Rec1 catalog. Online booking via El Segundo Recreation, Parks & Library.'),
+  ('calabasas',       'City of Calabasas',         'https://www.cityofcalabasas.com/government/community-services/calabasas-tennis-swim-center', 'custom', false, 'Calabasas Tennis & Swim Center.'),
   ('glendale',        'City of Glendale',          'https://www.glendaleca.gov/government/departments/community-services-parks/parks-recreation/tennis-courts', 'custom', false, 'Fremont + Glorieta.'),
-  ('san_marino',      'San Marino Tennis Center',  'https://sanmarinotenniscenter.com/',                        'custom', false, 'Member-priority booking.'),
-  ('cerritos',        'City of Cerritos',          'https://www.cerritos.us/RESIDENTS/recreation/tennis_center.php', 'custom', false, 'Resident booking.'),
-  ('la_mirada',       'City of La Mirada',         'https://www.cityoflamirada.org/our-city/departments-services/community-services/recreation-leisure-activities/tennis-center', 'custom', false, 'Resident-priority booking.'),
-  ('downey',          'City of Downey',            'https://www.downeyca.org/our-city/departments/parks-recreation', 'custom', false, 'Independence Park TC.'),
+  ('san_marino',      'San Marino Community Services', 'https://secure.rec1.com/CA/san-marino-ca/catalog',      'rec1',   false, 'Rec1 catalog. Old sanmarinotenniscenter.com retired.'),
+  ('cerritos',        'City of Cerritos',          'https://www.cerritos.gov/',                                 'custom', false, 'Cerritos Tennis Center: resident booking.'),
+  ('la_mirada',       'City of La Mirada',         'https://secure.rec1.com/CA/la-mirada-community-services/catalog', 'rec1', false, 'Rec1 catalog (La Mirada Community Services).'),
+  ('downey',          'City of Downey',            'https://anc.apm.activecommunities.com/cityofdowney/activity/search?activity_keyword=tennis', 'activenet', false, 'ActiveNet. Independence Park TC.'),
   ('whittier',        'City of Whittier',          'https://cityofwhittier.org/government/parks-recreation-and-community-services', 'custom', false, 'Palm Park TC.'),
-  ('ucla',            'UCLA Tennis Center',        'https://uclatenniscenter.com/',                             'custom', false, 'Member club; limited public access.'),
+  ('beverly_hills',   'City of Beverly Hills',     'https://www.beverlyhills.org/',                             'custom', false, 'La Cienega + Roxbury + Beverly Hills HS. Resident-priority booking; phone primary.'),
+  ('ucla',            'UCLA Recreation',           'https://recreation.ucla.edu/facilities/los-angeles-tennis-center', 'custom', false, 'Member club; limited public access.'),
   ('public_open',     'Free public park courts',   'https://www.tennismaps.com/index.asp?regionid=104',         'static',    false, 'Drop-in / first-come-first-served park courts. No online booking.')
-on conflict (id) do nothing;
+on conflict (id) do update set
+  name = excluded.name,
+  booking_url = excluded.booking_url,
+  scraper_type = excluded.scraper_type,
+  notes = excluded.notes;
 """))
 
 out.append("-- 3. Facilities ---------------------------------------------------------")

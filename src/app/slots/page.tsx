@@ -44,6 +44,74 @@ interface FacilityView extends FacilityRow {
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Open Slots · Hotties That Hit' };
 
+const LA_TZ = 'America/Los_Angeles';
+
+// Convert an LA-local YYYY-MM-DD date into the half-open UTC instant range
+// [startUtc, endUtc) covering that LA calendar day. Handles DST correctly.
+function laDayBoundsUtc(date: string): { startUtc: string; endUtc: string } {
+  const startUtc = laMidnightUtc(date);
+  // Add 24h then re-normalize for DST transition days.
+  const [y, m, d] = date.split('-').map((s) => parseInt(s, 10));
+  const next = new Date(Date.UTC(y, m - 1, d + 1));
+  const nextStr = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-${String(next.getUTCDate()).padStart(2, '0')}`;
+  const endUtc = laMidnightUtc(nextStr);
+  return { startUtc, endUtc };
+}
+
+function laMidnightUtc(date: string): string {
+  // LA UTC offset for the given date. PDT = -07:00, PST = -08:00.
+  const probe = new Date(`${date}T12:00:00Z`);
+  const tzName = new Intl.DateTimeFormat('en-US', {
+    timeZone: LA_TZ,
+    timeZoneName: 'shortOffset',
+    hour12: false,
+    hour: 'numeric',
+  })
+    .formatToParts(probe)
+    .find((p) => p.type === 'timeZoneName')?.value ?? 'GMT-8';
+  const m = /GMT([+-])(\d{1,2})(?::?(\d{2}))?/.exec(tzName);
+  const sign = m?.[1] === '+' ? 1 : -1;
+  const h = m ? parseInt(m[2], 10) : 8;
+  const min = m?.[3] ? parseInt(m[3], 10) : 0;
+  const offsetMinutes = sign * (h * 60 + min); // e.g. -420 for PDT
+  // LA midnight is `date 00:00:00 + offset` worth of minutes past UTC midnight.
+  // utc = local - offset, so utc midnight = -offsetMinutes added to date 00:00Z.
+  const base = new Date(`${date}T00:00:00Z`);
+  base.setUTCMinutes(base.getUTCMinutes() - offsetMinutes);
+  return base.toISOString();
+}
+
+function formatLaTime(iso: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: LA_TZ,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })
+    .format(new Date(iso))
+    .replace(/\s/g, '')
+    .toLowerCase();
+}
+
+function todayInLa(): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: LA_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const y = parts.find((p) => p.type === 'year')?.value ?? '1970';
+  const m = parts.find((p) => p.type === 'month')?.value ?? '01';
+  const d = parts.find((p) => p.type === 'day')?.value ?? '01';
+  return `${y}-${m}-${d}`;
+}
+
+function addDaysIso(date: string, days: number): string {
+  const [y, m, d] = date.split('-').map((s) => parseInt(s, 10));
+  const dt = new Date(Date.UTC(y, m - 1, d + days));
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+}
+
 // The slot-level booking_url scraped from LA WebTrac is the AJAX
 // `UpdateSelection` endpoint that returns JSON like
 // `{"status":"added","descriptions":"<span...>"}` — useless to a human user.
@@ -82,17 +150,19 @@ async function loadData(date: string, region: string | null) {
     .order('name');
 
   const srcQ = supabase.from('sources').select('id, name, booking_url');
-
-  const start = new Date(`${date}T00:00:00`).toISOString();
-  const end = new Date(`${date}T23:59:59`).toISOString();
+  // Interpret `date` as an LA-local calendar day, not a UTC day. The scraper
+  // stores wall-clock LA times converted to real UTC instants, so an LA 9pm
+  // slot on May 9 lives at ~2026-05-10T04:00Z. Filtering by UTC midnight would
+  // miss every evening slot and break the day picker.
+  const { startUtc, endUtc } = laDayBoundsUtc(date);
   const slotQ = supabase
     .from('slots')
     .select(
       'id, facility_id, court_number, start_time, end_time, price_cents, booking_url'
     )
     .eq('available', true)
-    .gte('start_time', start)
-    .lte('start_time', end)
+    .gte('start_time', startUtc)
+    .lt('start_time', endUtc)
     .order('start_time', { ascending: true })
     .limit(2000);
 
@@ -145,7 +215,7 @@ export default async function SlotsPage({
 }: {
   searchParams: { date?: string; region?: string };
 }) {
-  const today = format(new Date(), 'yyyy-MM-dd');
+  const today = todayInLa();
   const date = searchParams.date ?? today;
   const region =
     searchParams.region && searchParams.region !== 'all'
@@ -155,8 +225,18 @@ export default async function SlotsPage({
   const { regions, facilities, totalSlots } = await loadData(date, region);
 
   const dateOptions = Array.from({ length: 8 }, (_, i) => {
-    const d = addDays(new Date(), i);
-    return { value: format(d, 'yyyy-MM-dd'), label: format(d, 'EEE M/d') };
+    const value = addDaysIso(today, i);
+    // Build a noon-LA Date so the label formats reliably regardless of host TZ.
+    const labelDate = new Date(`${value}T12:00:00-08:00`);
+    return {
+      value,
+      label: new Intl.DateTimeFormat('en-US', {
+        timeZone: LA_TZ,
+        weekday: 'short',
+        month: 'numeric',
+        day: 'numeric',
+      }).format(labelDate),
+    };
   });
 
   // Per-facility weather (downtown-LA fallback if no lat/lng).
@@ -474,7 +554,7 @@ function FacilityCard({
             rel="noreferrer"
             className="text-xs px-2.5 py-1 rounded-md bg-hot-500/15 text-hot-100 border border-hot-500/30 hover:bg-hot-500/30 hover:text-white transition"
           >
-            {format(new Date(s.start_time), 'h:mma').toLowerCase()}
+            {formatLaTime(s.start_time)}
             {s.court_number ? ` · ${s.court_number}` : ''}
           </a>
         ))}
