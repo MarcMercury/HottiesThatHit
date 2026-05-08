@@ -44,6 +44,30 @@ interface FacilityView extends FacilityRow {
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Open Slots · Hotties That Hit' };
 
+// The slot-level booking_url scraped from LA WebTrac is the AJAX
+// `UpdateSelection` endpoint that returns JSON like
+// `{"status":"added","descriptions":"<span...>"}` — useless to a human user.
+// Instead, point tap-to-book at the facility's interactive search page and
+// prefill the chosen date so the user lands on the right calendar view.
+function buildBookingHref(facilityUrl: string | null, date: string): string | null {
+  if (!facilityUrl) return null;
+  // Only rewrite WebTrac (LA Rec) search URLs; leave third-party links alone.
+  if (!/webtrac\.wsc\/search\.html/i.test(facilityUrl)) return facilityUrl;
+  try {
+    const url = new URL(facilityUrl);
+    const [y, m, d] = date.split('-');
+    if (y && m && d) {
+      const formatted = `${m}/${d}/${y}`;
+      url.searchParams.set('begindate', formatted);
+      url.searchParams.set('enddate', formatted);
+      url.searchParams.set('display', 'Detail');
+    }
+    return url.toString();
+  } catch {
+    return facilityUrl;
+  }
+}
+
 async function loadData(date: string, region: string | null) {
   const supabase = getServiceClient();
 
@@ -271,6 +295,7 @@ export default async function SlotsPage({
                     f.address ?? `${f.name}, ${f.city ?? 'Los Angeles'}`,
                 });
                 const slots = f.slots;
+                const slotBookHref = buildBookingHref(f.booking_url, date);
                 return (
                   <div key={f.id} className="card p-4">
                     <div className="flex items-start justify-between mb-3 gap-3">
@@ -316,7 +341,7 @@ export default async function SlotsPage({
                           {slots.slice(0, 30).map((s) => (
                             <a
                               key={s.id}
-                              href={s.booking_url ?? f.booking_url ?? '#'}
+                              href={slotBookHref ?? '#'}
                               target="_blank"
                               rel="noreferrer"
                               className="text-xs px-2.5 py-1 rounded-md bg-hot-500/15 text-hot-100
@@ -343,7 +368,7 @@ export default async function SlotsPage({
                               : 'No online booking — call ahead or visit the operator site.'}
                         </p>
                         <a
-                          href={f.booking_url}
+                          href={slotBookHref ?? f.booking_url}
                           target="_blank"
                           rel="noreferrer"
                           className="text-xs whitespace-nowrap px-3 py-1.5 rounded-md bg-hot-500/20 text-hot-100 border border-hot-500/30 hover:bg-hot-500/40 hover:text-white transition"
