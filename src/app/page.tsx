@@ -1,6 +1,6 @@
 // Landing page — hero, value props, CTA. Themed to the HTH logo.
 import Link from 'next/link';
-import Hero3D from '@/components/Hero3D';
+import Image from 'next/image';
 
 export default function Home() {
   return (
@@ -37,7 +37,17 @@ export default function Home() {
           </div>
 
           <div className="relative mx-auto">
-            <Hero3D slug="hero" fallbackSrc="/logo.png" fallbackAlt="Hotties That Hit" size={520} />
+            <div className="relative w-[320px] h-[320px] md:w-[480px] md:h-[480px]">
+              <div className="absolute -inset-10 rounded-full bg-hot-500/30 blur-3xl pointer-events-none" />
+              <Image
+                src="/logo.png"
+                alt="Hotties That Hit"
+                fill
+                priority
+                sizes="(min-width: 768px) 480px, 320px"
+                className="relative object-contain drop-shadow-[0_10px_40px_rgba(255,31,143,0.45)]"
+              />
+            </div>
           </div>
         </div>
       </section>
