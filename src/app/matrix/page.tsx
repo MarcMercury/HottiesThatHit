@@ -98,7 +98,7 @@ const ZONES: Zone[] = [
   },
   {
     key: 'wife',
-    title: 'Wife Zone',
+    title: 'Marry Them Zone',
     blurb: 'Mixed doubles legend. Lock it in.',
     rect: [4.0, 5.0, 7, 9],
     tone: 'gold',
