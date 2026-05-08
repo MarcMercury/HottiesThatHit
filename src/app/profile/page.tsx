@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { getBrowserClient } from '@/lib/supabase-browser';
+import { revalidatePlayers } from './actions';
 
 const NTRP_OPTIONS = [
   1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0,
@@ -115,6 +116,7 @@ export default function ProfilePage() {
     }
     setMsg({ kind: 'ok', text: 'Photo updated.' });
     await refreshProfile();
+    await revalidatePlayers(username || profile?.username);
   };
 
   const onRemoveImage = async (slot: 0 | 1 | 2) => {
@@ -138,6 +140,7 @@ export default function ProfilePage() {
     setImages(next);
     setMsg({ kind: 'ok', text: 'Photo removed.' });
     await refreshProfile();
+    await revalidatePlayers(username || profile?.username);
   };
 
   const onSave = async (e: React.FormEvent) => {
@@ -161,6 +164,7 @@ export default function ProfilePage() {
     }
     setMsg({ kind: 'ok', text: 'Profile saved.' });
     await refreshProfile();
+    await revalidatePlayers(payload.username as string);
   };
 
   return (
