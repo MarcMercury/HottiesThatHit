@@ -387,7 +387,7 @@ async function main() {
     lines.push('These have a URL stored but `resolveBookingUrl()` strips it (host/url known-broken).');
     lines.push('Users see no link — fall-through search.');
     lines.push('');
-    const byBlockedHost = new Map<string, RowResult[]>();
+    const byBlockedHost = new Map<string, Row[]>();
     for (const r of blocked) {
       let host = '(invalid)';
       try { host = new URL(r.rawUrl!).hostname.toLowerCase(); } catch {}
