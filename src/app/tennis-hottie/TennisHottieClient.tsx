@@ -187,26 +187,49 @@ function ResultCard({
 }) {
   const shareText = useMemo(
     () =>
-      `I'm ${result.similarity}% ${result.name} (${result.tour} #${result.rank}). "${result.aura}" — find your tennis hottie at hottiesthat.hit`,
+      `I'm ${result.similarity}% ${result.name} (${result.tour} #${result.rank}). "${result.aura}"`,
     [result],
   );
 
+  const [sharing, setSharing] = useState(false);
+
   const share = async () => {
-    if (typeof navigator !== 'undefined' && 'share' in navigator) {
-      try {
-        await navigator.share({
-          title: `I got ${result.name}!`,
-          text: shareText,
-          url: typeof window !== 'undefined' ? window.location.href : undefined,
-        });
-        return;
-      } catch {
-        /* fallthrough */
+    setSharing(true);
+    try {
+      const blob = await renderShareCard({ result, selfieUrl });
+      if (!blob) throw new Error('Could not render card');
+      const file = new File([blob], `tennis-hottie-${slugify(result.name)}.png`, {
+        type: 'image/png',
+      });
+
+      const nav = typeof navigator !== 'undefined' ? (navigator as Navigator & { canShare?: (d: ShareData) => boolean }) : null;
+      if (nav && typeof nav.share === 'function' && nav.canShare?.({ files: [file] })) {
+        try {
+          await nav.share({
+            files: [file],
+            title: `I got ${result.name}!`,
+            text: shareText,
+          });
+          return;
+        } catch (err) {
+          // user cancelled or share failed → fall through to download
+          if (err instanceof Error && err.name === 'AbortError') return;
+        }
       }
-    }
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      await navigator.clipboard.writeText(shareText);
-      alert('Copied share text to clipboard!');
+
+      // Fallback: trigger a download of the PNG
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Share failed');
+    } finally {
+      setSharing(false);
     }
   };
 
@@ -269,9 +292,10 @@ function ResultCard({
         <div className="mt-6 flex flex-col sm:flex-row gap-3">
           <button
             onClick={share}
-            className="flex-1 rounded-full bg-hot-500 hover:bg-hot-400 text-white font-semibold py-3 transition shadow-glow-sm"
+            disabled={sharing}
+            className="flex-1 rounded-full bg-hot-500 hover:bg-hot-400 disabled:opacity-60 text-white font-semibold py-3 transition shadow-glow-sm"
           >
-            Share my card
+            {sharing ? 'Building your card…' : 'Share my card'}
           </button>
           <button
             onClick={onReset}
@@ -304,5 +328,250 @@ function Pill({ label, value }: { label: string; value: string }) {
       </div>
       <div className="text-white/90">{value}</div>
     </div>
+  );
+}
+
+function slugify(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+    img.src = src;
+  });
+}
+
+function drawImageCover(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+) {
+  const ir = img.width / img.height;
+  const tr = w / h;
+  let sx = 0, sy = 0, sw = img.width, sh = img.height;
+  if (ir > tr) {
+    sw = img.height * tr;
+    sx = (img.width - sw) / 2;
+  } else {
+    sh = img.width / tr;
+    sy = (img.height - sh) / 2;
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+
+function roundRectPath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+function wrapText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let current = '';
+  for (const w of words) {
+    const candidate = current ? `${current} ${w}` : w;
+    if (ctx.measureText(candidate).width > maxWidth && current) {
+      lines.push(current);
+      current = w;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+async function renderShareCard({
+  result,
+  selfieUrl,
+}: {
+  result: Result;
+  selfieUrl: string;
+}): Promise<Blob | null> {
+  // Vertical IG/TikTok story dimensions
+  const W = 1080;
+  const H = 1920;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  // Background gradient (hot pink → ink)
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#4d0426');
+  bg.addColorStop(0.45, '#171717');
+  bg.addColorStop(1, '#0a0a0a');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Top pink glow
+  const glow = ctx.createRadialGradient(W / 2, 0, 50, W / 2, 0, 900);
+  glow.addColorStop(0, 'rgba(255,31,143,0.55)');
+  glow.addColorStop(1, 'rgba(255,31,143,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  // Header label
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.font = '600 36px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('WHAT TENNIS HOTTIE ARE YOU?', W / 2, 140);
+
+  // Similarity pill
+  const pillW = 360, pillH = 70, pillX = (W - pillW) / 2, pillY = 190;
+  ctx.fillStyle = '#ff1f8f';
+  roundRectPath(ctx, pillX, pillY, pillW, pillH, pillH / 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = '700 32px system-ui, sans-serif';
+  ctx.fillText(`VIBE MATCH · ${result.similarity}%`, W / 2, pillY + 46);
+
+  // "You are…"
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.font = '500 34px system-ui, sans-serif';
+  ctx.fillText('You are…', W / 2, 340);
+
+  // Player name
+  ctx.fillStyle = '#fff';
+  ctx.font = '800 96px system-ui, sans-serif';
+  ctx.fillText(result.name, W / 2, 440);
+
+  // Tour + rank
+  ctx.fillStyle = '#ff7ebe';
+  ctx.font = '600 36px system-ui, sans-serif';
+  ctx.fillText(`${result.tour} · World Rank #${result.rank}`, W / 2, 495);
+
+  // Selfie + player images (side by side)
+  const imgSize = 380;
+  const gap = 60;
+  const imgY = 560;
+  const totalW = imgSize * 2 + gap;
+  const leftX = (W - totalW) / 2;
+  const rightX = leftX + imgSize + gap;
+
+  try {
+    const [selfieImg, playerImg] = await Promise.all([
+      loadImage(selfieUrl),
+      loadImage(result.image),
+    ]);
+    // selfie
+    ctx.save();
+    roundRectPath(ctx, leftX, imgY, imgSize, imgSize, 40);
+    ctx.clip();
+    drawImageCover(ctx, selfieImg, leftX, imgY, imgSize, imgSize);
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,31,143,0.8)';
+    ctx.lineWidth = 6;
+    roundRectPath(ctx, leftX, imgY, imgSize, imgSize, 40);
+    ctx.stroke();
+
+    // ≈ separator
+    ctx.fillStyle = '#ff4aa4';
+    ctx.font = '800 100px system-ui, sans-serif';
+    ctx.fillText('≈', W / 2, imgY + imgSize / 2 + 36);
+
+    // player
+    ctx.save();
+    roundRectPath(ctx, rightX, imgY, imgSize, imgSize, 40);
+    ctx.clip();
+    drawImageCover(ctx, playerImg, rightX, imgY, imgSize, imgSize);
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,31,143,0.8)';
+    ctx.lineWidth = 6;
+    roundRectPath(ctx, rightX, imgY, imgSize, imgSize, 40);
+    ctx.stroke();
+  } catch (e) {
+    console.error(e);
+  }
+
+  // Aura
+  ctx.fillStyle = '#ffd6ec';
+  ctx.font = 'italic 600 44px system-ui, sans-serif';
+  ctx.fillText(`“${result.aura}”`, W / 2, imgY + imgSize + 100);
+
+  // Pills (2x2)
+  const pills = [
+    ['Court Personality', result.courtPersonality],
+    ['Red Flag', result.redFlag],
+    ['Doubles Energy', result.doublesEnergy],
+    ['Tennis Aura', result.aura],
+  ];
+  const pCols = 2;
+  const pW = 460, pH = 130, pGap = 30;
+  const pStartX = (W - (pCols * pW + (pCols - 1) * pGap)) / 2;
+  const pStartY = imgY + imgSize + 160;
+  pills.forEach((p, i) => {
+    const col = i % pCols;
+    const row = Math.floor(i / pCols);
+    const x = pStartX + col * (pW + pGap);
+    const y = pStartY + row * (pH + pGap);
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    roundRectPath(ctx, x, y, pW, pH, 24);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = '600 22px system-ui, sans-serif';
+    ctx.fillText(p[0].toUpperCase(), x + 24, y + 42);
+    ctx.fillStyle = '#fff';
+    ctx.font = '600 32px system-ui, sans-serif';
+    // truncate long values to one line
+    let val = p[1];
+    while (ctx.measureText(val).width > pW - 48 && val.length > 4) {
+      val = val.slice(0, -2);
+    }
+    if (val !== p[1]) val = val.slice(0, -1) + '…';
+    ctx.fillText(val, x + 24, y + 90);
+  });
+
+  // Caption (wrapped)
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#fff';
+  ctx.font = '700 40px system-ui, sans-serif';
+  const captionLines = wrapText(ctx, result.funnyCaption, W - 160);
+  let cy = pStartY + 2 * (pH + pGap) + 80;
+  for (const line of captionLines) {
+    ctx.fillText(line, W / 2, cy);
+    cy += 56;
+  }
+
+  // Footer
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '600 28px system-ui, sans-serif';
+  ctx.fillText('hottiesthat.hit · What Tennis Hottie Are You?', W / 2, H - 80);
+
+  return new Promise<Blob | null>((resolve) =>
+    canvas.toBlob((b) => resolve(b), 'image/png'),
   );
 }
