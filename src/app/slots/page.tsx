@@ -121,7 +121,7 @@ export default async function SlotsPage({
 
           <button
             type="submit"
-            className="px-5 py-2 rounded-md bg-hot-500 hover:bg-hot-400 text-white text-sm font-medium shadow-glow-sm"
+            className="px-5 py-2 rounded-md bg-hot-500 hover:bg-hot-400 text-white text-sm font-medium shadow-glow-sm self-start md:self-auto"
           >
             Update
           </button>
@@ -150,25 +150,25 @@ export default async function SlotsPage({
                 return (
                   <li
                     key={f.id}
-                    className="flex items-center justify-between gap-3 px-4 py-3"
+                    className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-white truncate">
+                      <p className="text-sm font-semibold text-white">
                         {f.name}
                       </p>
-                      <p className="text-xs text-white/50 truncate">
+                      <p className="text-xs text-white/50">
                         {f.region ?? f.city ?? 'LA'}
                         {f.num_courts ? ` · ${f.num_courts} courts` : ''}
                         {f.surface ? ` · ${f.surface}` : ''}
                         {f.lights ? ' · lights' : ''}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-3 sm:gap-2 sm:shrink-0">
                       <a
                         href={dirHref}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[11px] text-white/60 hover:text-white"
+                        className="text-xs text-white/60 hover:text-white"
                       >
                         Directions ↗
                       </a>
@@ -177,7 +177,7 @@ export default async function SlotsPage({
                           href={f.booking_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-xs whitespace-nowrap px-2.5 py-1 rounded-md bg-hot-500/20 text-hot-100 border border-hot-500/30 hover:bg-hot-500/40 hover:text-white transition"
+                          className="text-xs whitespace-nowrap px-3 py-1.5 rounded-md bg-hot-500/20 text-hot-100 border border-hot-500/30 hover:bg-hot-500/40 hover:text-white transition"
                         >
                           Reserve ↗
                         </a>

@@ -12,7 +12,6 @@ const links = [
   { href: '/open-play', label: 'Open Play' },
   { href: '/players', label: 'Find Players' },
   { href: '/matrix', label: 'Hot vs Hit' },
-  { href: '/about', label: 'About' },
 ];
 
 export function Navbar() {
@@ -81,7 +80,7 @@ export function Navbar() {
                 href="/profile"
                 className="rounded-full px-3 py-1.5 text-sm text-white/80 hover:text-white hover:bg-white/5"
               >
-                {profile?.username ? `@${profile.username}` : 'Profile'}
+                My Profile
               </Link>
               <button
                 onClick={handleSignOut}
@@ -154,7 +153,7 @@ export function Navbar() {
                 onClick={() => setOpen(false)}
                 className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
               >
-                {profile?.username ? `@${profile.username}` : 'Profile'}
+                My Profile
               </Link>
               <button
                 onClick={handleSignOut}

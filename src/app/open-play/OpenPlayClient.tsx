@@ -267,8 +267,8 @@ export function OpenPlayClient({
   return (
     <div className="space-y-6">
       {/* Top action bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
           <select
             value={filterScope}
             onChange={(e) => setFilterScope(e.target.value as 'upcoming' | 'mine')}
@@ -293,11 +293,11 @@ export function OpenPlayClient({
           </select>
         </div>
         {user ? (
-          <button onClick={() => setShowCreate(true)} className="btn-primary">
+          <button onClick={() => setShowCreate(true)} className="btn-primary w-full sm:w-auto">
             Set Up a Match
           </button>
         ) : (
-          <Link href="/login?next=/open-play" className="btn-primary">
+          <Link href="/login?next=/open-play" className="btn-primary w-full sm:w-auto">
             Log in to post
           </Link>
         )}
@@ -390,11 +390,11 @@ function EventCard({
   const ended = new Date(ev.end_time).getTime() < Date.now();
 
   return (
-    <li className="card p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
+    <li className="card p-4 sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-semibold text-white">
+            <h3 className="text-base sm:text-lg font-semibold text-white">
               {ev.title || 'Open Play'}
             </h3>
             <span className="chip">{levelLabel(ev.min_ntrp, ev.max_ntrp)}</span>
@@ -435,11 +435,11 @@ function EventCard({
             )}
           </p>
           {ev.notes && (
-            <p className="mt-2 text-sm text-white/70 whitespace-pre-wrap">{ev.notes}</p>
+            <p className="mt-2 text-sm text-white/70 whitespace-pre-wrap break-words">{ev.notes}</p>
           )}
         </div>
 
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col gap-2 sm:items-end">
           <div className="text-xs text-white/50">
             Hosted by{' '}
             {ev.host ? (
@@ -454,7 +454,7 @@ function EventCard({
             )}
           </div>
           {!ended && (
-            <div className="flex flex-wrap justify-end gap-2">
+            <div className="flex flex-wrap gap-2 sm:justify-end">
               <a
                 href={googleCalendarUrl(ev)}
                 target="_blank"
@@ -687,11 +687,11 @@ function CreateMatchModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-2 sm:p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="card my-8 w-full max-w-2xl p-6"
+        className="card my-4 sm:my-8 w-full max-w-2xl p-4 sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">

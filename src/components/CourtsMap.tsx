@@ -188,90 +188,171 @@ export default function CourtsMap({ facilities }: Props) {
     <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
       {/* Filters */}
       <aside className="card p-4 space-y-4 h-fit lg:sticky lg:top-4">
-        <div>
-          <label className="block text-xs uppercase tracking-wider text-white/50 mb-1">Search</label>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Court or city…"
-            className="w-full rounded-md bg-ink-soft/80 border border-ink-line px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-hot-400"
+        <details className="lg:hidden -m-1 mb-1 group" open={false}>
+          <summary className="flex cursor-pointer list-none items-center justify-between rounded-md px-1 py-1 text-sm font-semibold text-white/90">
+            <span>
+              Filters
+              <span className="ml-2 text-xs font-normal text-white/50">
+                ({visible.length}/{facilities.length})
+              </span>
+            </span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="transition group-open:rotate-180">
+              <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </summary>
+          <div className="mt-3 space-y-4">
+            <FilterControls
+              search={search} setSearch={setSearch}
+              showManaged={showManaged} setShowManaged={setShowManaged}
+              showOpen={showOpen} setShowOpen={setShowOpen}
+              onlineOnly={onlineOnly} setOnlineOnly={setOnlineOnly}
+              region={region} setRegion={setRegion}
+              allRegions={allRegions} allSources={allSources}
+              visibleCount={visible.length} totalCount={facilities.length}
+            />
+          </div>
+        </details>
+
+        <div className="hidden lg:block space-y-4">
+          <FilterControls
+            search={search} setSearch={setSearch}
+            showManaged={showManaged} setShowManaged={setShowManaged}
+            showOpen={showOpen} setShowOpen={setShowOpen}
+            onlineOnly={onlineOnly} setOnlineOnly={setOnlineOnly}
+            region={region} setRegion={setRegion}
+            allRegions={allRegions} allSources={allSources}
+            visibleCount={visible.length} totalCount={facilities.length}
           />
         </div>
-
-        <div>
-          <p className="text-xs uppercase tracking-wider text-white/50 mb-2">Type</p>
-          <label className="flex items-center gap-2 text-sm py-1 cursor-pointer">
-            <input type="checkbox" checked={showManaged} onChange={(e) => setShowManaged(e.target.checked)} className="accent-hot-500" />
-            <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: CATEGORY_COLOR['Public Managed'] }} />
-            Reservable centers
-          </label>
-          <label className="flex items-center gap-2 text-sm py-1 cursor-pointer">
-            <input type="checkbox" checked={showOpen} onChange={(e) => setShowOpen(e.target.checked)} className="accent-hot-500" />
-            <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: CATEGORY_COLOR['Public Open'] }} />
-            Free park courts
-          </label>
-        </div>
-
-        <div>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input type="checkbox" checked={onlineOnly} onChange={(e) => setOnlineOnly(e.target.checked)} className="accent-hot-500" />
-            Online booking only
-          </label>
-          <p className="text-[11px] text-white/40 mt-1">Yellow ring = reservable online.</p>
-        </div>
-
-        <div>
-          <label className="block text-xs uppercase tracking-wider text-white/50 mb-1">Region</label>
-          <select
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-            className="w-full rounded-md bg-ink-soft/80 border border-ink-line px-3 py-2 text-sm text-white"
-          >
-            <option value="">All regions</option>
-            {allRegions.map((r) => (
-              <option key={r} value={r}>{r}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="border-t border-ink-line pt-3 text-xs text-white/55">
-          Showing <span className="text-hot-300 font-semibold">{visible.length}</span> of {facilities.length} courts.
-        </div>
-
-        <details className="text-xs text-white/55">
-          <summary className="cursor-pointer text-white/70">Booking systems ({allSources.length})</summary>
-          <ul className="mt-2 space-y-1">
-            {allSources.map((s) => (
-              <li key={s}>· {s}</li>
-            ))}
-          </ul>
-        </details>
       </aside>
 
       {/* Map */}
-      <div className="card overflow-hidden border-ink-line" style={{ height: '70vh', minHeight: 480 }}>
+      <div className="card overflow-hidden border-ink-line h-[60vh] min-h-[360px] sm:h-[65vh] lg:h-[70vh] lg:min-h-[480px]">
         <div ref={mapEl} className="w-full h-full" />
       </div>
     </div>
   );
 }
 
+function FilterControls({
+  search, setSearch,
+  showManaged, setShowManaged,
+  showOpen, setShowOpen,
+  onlineOnly, setOnlineOnly,
+  region, setRegion,
+  allRegions, allSources,
+  visibleCount, totalCount,
+}: {
+  search: string; setSearch: (v: string) => void;
+  showManaged: boolean; setShowManaged: (v: boolean) => void;
+  showOpen: boolean; setShowOpen: (v: boolean) => void;
+  onlineOnly: boolean; setOnlineOnly: (v: boolean) => void;
+  region: string; setRegion: (v: string) => void;
+  allRegions: string[]; allSources: string[];
+  visibleCount: number; totalCount: number;
+}) {
+  return (
+    <>
+      <div>
+        <label className="block text-xs uppercase tracking-wider text-white/50 mb-1">Search</label>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Court or city…"
+          className="w-full rounded-md bg-ink-soft/80 border border-ink-line px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-hot-400"
+        />
+      </div>
+
+      <div>
+        <p className="text-xs uppercase tracking-wider text-white/50 mb-2">Type</p>
+        <label className="flex items-center gap-2 text-sm py-1 cursor-pointer">
+          <input type="checkbox" checked={showManaged} onChange={(e) => setShowManaged(e.target.checked)} className="accent-hot-500" />
+          <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: CATEGORY_COLOR['Public Managed'] }} />
+          Reservable centers
+        </label>
+        <label className="flex items-center gap-2 text-sm py-1 cursor-pointer">
+          <input type="checkbox" checked={showOpen} onChange={(e) => setShowOpen(e.target.checked)} className="accent-hot-500" />
+          <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: CATEGORY_COLOR['Public Open'] }} />
+          Free park courts
+        </label>
+      </div>
+
+      <div>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" checked={onlineOnly} onChange={(e) => setOnlineOnly(e.target.checked)} className="accent-hot-500" />
+          Online booking only
+        </label>
+        <p className="text-[11px] text-white/40 mt-1">Yellow ring = reservable online.</p>
+      </div>
+
+      <div>
+        <label className="block text-xs uppercase tracking-wider text-white/50 mb-1">Region</label>
+        <select
+          value={region}
+          onChange={(e) => setRegion(e.target.value)}
+          className="w-full rounded-md bg-ink-soft/80 border border-ink-line px-3 py-2 text-sm text-white"
+        >
+          <option value="">All regions</option>
+          {allRegions.map((r) => (
+            <option key={r} value={r}>{r}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="border-t border-ink-line pt-3 text-xs text-white/55">
+        Showing <span className="text-hot-300 font-semibold">{visibleCount}</span> of {totalCount} courts.
+      </div>
+
+      <details className="text-xs text-white/55">
+        <summary className="cursor-pointer text-white/70">Booking systems ({allSources.length})</summary>
+        <ul className="mt-2 space-y-1">
+          {allSources.map((s) => (
+            <li key={s}>· {s}</li>
+          ))}
+        </ul>
+      </details>
+    </>
+  );
+}
+
+// Booking URLs that we know are unreliable (expired SSL, dead pages, etc.)
+// Fall through to a Google search instead of linking the user to a broken site.
+const BAD_BOOKING_HOSTS = ['tennismaps.com'];
+
+function isBadBookingUrl(url: string | null): boolean {
+  if (!url) return true;
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return BAD_BOOKING_HOSTS.some((bad) => host === bad || host.endsWith('.' + bad));
+  } catch {
+    return true;
+  }
+}
+
 function popupHtml(f: Facility): string {
   const parts: string[] = [];
-  parts.push(`<div style="font:600 14px system-ui;color:#fff;margin-bottom:4px;">${escapeHtml(f.name)}</div>`);
+  parts.push(`<div style="font:600 14px system-ui;color:#0a0a0a;margin-bottom:4px;">${escapeHtml(f.name)}</div>`);
   const meta: string[] = [];
   if (f.num_courts) meta.push(`${f.num_courts} courts`);
   if (f.region) meta.push(f.region);
   if (f.category) meta.push(CATEGORY_LABEL[f.category] ?? f.category);
-  parts.push(`<div style="font:12px system-ui;color:#a1a1aa;margin-bottom:6px;">${meta.join(' · ')}</div>`);
-  if (f.phone) parts.push(`<div style="font:12px system-ui;"><a style="color:#fda4af" href="tel:${f.phone}">${escapeHtml(f.phone)}</a></div>`);
-  if (f.online_booking && f.booking_url) {
-    parts.push(`<a href="${escapeHtml(f.booking_url)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;padding:6px 10px;border-radius:9999px;background:#FF1F8F;color:white;font:600 12px system-ui;text-decoration:none;">Book online →</a>`);
-  } else if (f.booking_url) {
-    parts.push(`<a href="${escapeHtml(f.booking_url)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;padding:6px 10px;border-radius:9999px;border:1px solid #FF1F8F;color:#FF1F8F;font:600 12px system-ui;text-decoration:none;">Info / phone reservation</a>`);
+  parts.push(`<div style="font:12px system-ui;color:#525252;margin-bottom:6px;">${meta.join(' · ')}</div>`);
+  if (f.address) {
+    parts.push(`<div style="font:12px system-ui;color:#737373;margin-bottom:6px;">${escapeHtml(f.address)}</div>`);
+  }
+  if (f.phone) parts.push(`<div style="font:12px system-ui;"><a style="color:#be185d" href="tel:${f.phone}">${escapeHtml(f.phone)}</a></div>`);
+
+  const usableBookingUrl = isBadBookingUrl(f.booking_url) ? null : f.booking_url;
+  if (f.online_booking && usableBookingUrl) {
+    parts.push(`<a href="${escapeHtml(usableBookingUrl)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;padding:6px 10px;border-radius:9999px;background:#FF1F8F;color:white;font:600 12px system-ui;text-decoration:none;">Book online →</a>`);
+  } else if (usableBookingUrl && f.category !== 'Public Open') {
+    parts.push(`<a href="${escapeHtml(usableBookingUrl)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;padding:6px 10px;border-radius:9999px;border:1px solid #FF1F8F;color:#FF1F8F;font:600 12px system-ui;text-decoration:none;">Info / phone reservation</a>`);
+  } else if (f.category === 'Public Open') {
+    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(f.name + ' tennis ' + (f.city ?? 'Los Angeles'))}`;
+    parts.push(`<a href="${searchUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;padding:6px 10px;border-radius:9999px;border:1px solid #22d3ee;color:#0891b2;font:600 12px system-ui;text-decoration:none;">Park info ↗</a>`);
   }
   const dirUrl = `https://www.google.com/maps/dir/?api=1&destination=${f.lat},${f.lng}`;
-  parts.push(`<a href="${dirUrl}" target="_blank" rel="noopener" style="display:inline-block;margin:8px 0 0 6px;color:#a1a1aa;font:500 12px system-ui;">Directions ↗</a>`);
+  parts.push(`<a href="${dirUrl}" target="_blank" rel="noopener" style="display:inline-block;margin:8px 0 0 6px;color:#525252;font:500 12px system-ui;">Directions ↗</a>`);
   return parts.join('');
 }
 

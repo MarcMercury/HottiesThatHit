@@ -10,13 +10,13 @@ export function PageHeader({
   return (
     <section className="relative overflow-hidden border-b border-ink-line">
       <div className="absolute inset-0 bg-neon-radial pointer-events-none" />
-      <div className="relative mx-auto max-w-6xl px-4 py-14 md:py-20">
-        {eyebrow && <p className="chip mb-4">{eyebrow}</p>}
-        <h1 className="font-display text-5xl md:text-6xl text-white neon-text">
+      <div className="relative mx-auto max-w-6xl px-4 py-10 sm:py-14 md:py-20">
+        {eyebrow && <p className="chip mb-3 sm:mb-4">{eyebrow}</p>}
+        <h1 className="font-display text-4xl sm:text-5xl md:text-6xl text-white neon-text leading-tight">
           {title}
         </h1>
         {subtitle && (
-          <p className="mt-4 max-w-2xl text-white/70 text-lg">{subtitle}</p>
+          <p className="mt-3 sm:mt-4 max-w-2xl text-white/70 text-base sm:text-lg">{subtitle}</p>
         )}
       </div>
     </section>
