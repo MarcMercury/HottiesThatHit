@@ -377,16 +377,44 @@ function FilterControls({
 
 // Booking URLs that we know are unreliable (expired SSL, dead pages, etc.)
 // Fall through to a Google search instead of linking the user to a broken site.
-const BAD_BOOKING_HOSTS = ['tennismaps.com'];
+const BAD_BOOKING_HOSTS = [
+  'tennismaps.com',
+  'prospectparktenniscenter.com',   // domain expired/parked
+  'mccarrentenniscenter.com',       // does not exist (correct is mccarrentennisnyc.com)
+  'alleypondtennis.com',            // domain expired
+  'riversideclay.org',              // domain expired (use riversideparknyc.org)
+];
 
-function isBadBookingUrl(url: string | null): boolean {
-  if (!url) return true;
+// Specific URLs that 404 even when the host is fine.
+const BAD_BOOKING_URLS = new Set<string>([
+  // USTA reorg moved the NTC page; old slug now 404s.
+  'https://www.usta.com/en/home/play/adult-tennis/programs/national/usta-billie-jean-king-national-tennis-center.html',
+  // tennisinmanhattan.com sub-club pages 404 — only the root resolves.
+  'https://tennisinmanhattan.com/vanderbilt-tennis-club/',
+  'https://tennisinmanhattan.com/sutton-east-tennis-club/',
+  'https://tennisinmanhattan.com/yorkville-tennis-club/',
+]);
+
+// In-place rewrites for known-broken URLs that have a clean replacement.
+const URL_REWRITES: Record<string, string> = {
+  'https://www.usta.com/en/home/play/adult-tennis/programs/national/usta-billie-jean-king-national-tennis-center.html':
+    'https://www.ntc.usta.com/',
+  'https://tennisinmanhattan.com/vanderbilt-tennis-club/': 'https://tennisinmanhattan.com/',
+  'https://tennisinmanhattan.com/sutton-east-tennis-club/': 'https://tennisinmanhattan.com/',
+  'https://tennisinmanhattan.com/yorkville-tennis-club/': 'https://tennisinmanhattan.com/',
+};
+
+function resolveBookingUrl(url: string | null): string | null {
+  if (!url) return null;
+  if (URL_REWRITES[url]) return URL_REWRITES[url];
+  if (BAD_BOOKING_URLS.has(url)) return null;
   try {
     const host = new URL(url).hostname.toLowerCase();
-    return BAD_BOOKING_HOSTS.some((bad) => host === bad || host.endsWith('.' + bad));
+    if (BAD_BOOKING_HOSTS.some((bad) => host === bad || host.endsWith('.' + bad))) return null;
   } catch {
-    return true;
+    return null;
   }
+  return url;
 }
 
 function popupHtml(f: Facility): string {
@@ -402,15 +430,17 @@ function popupHtml(f: Facility): string {
   }
   if (f.phone) parts.push(`<div style="font:12px system-ui;"><a style="color:#be185d" href="tel:${f.phone}">${escapeHtml(f.phone)}</a></div>`);
 
-  const usableBookingUrl = isBadBookingUrl(f.booking_url) ? null : f.booking_url;
+  const usableBookingUrl = resolveBookingUrl(f.booking_url);
+  const fallbackCity = f.metro === 'NYC' ? 'New York' : f.metro === 'LA' ? 'Los Angeles' : '';
+  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(f.name + ' tennis ' + (f.city ?? fallbackCity))}`;
+
   if (f.online_booking && usableBookingUrl) {
     parts.push(`<a href="${escapeHtml(usableBookingUrl)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;padding:6px 10px;border-radius:9999px;background:#FF1F8F;color:white;font:600 12px system-ui;text-decoration:none;">Book online →</a>`);
   } else if (usableBookingUrl && f.category !== 'Public Open') {
     parts.push(`<a href="${escapeHtml(usableBookingUrl)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;padding:6px 10px;border-radius:9999px;border:1px solid #FF1F8F;color:#FF1F8F;font:600 12px system-ui;text-decoration:none;">Info / phone reservation</a>`);
-  } else if (f.category === 'Public Open') {
-    const fallbackCity = f.metro === 'NYC' ? 'New York' : f.metro === 'LA' ? 'Los Angeles' : '';
-    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(f.name + ' tennis ' + (f.city ?? fallbackCity))}`;
-    parts.push(`<a href="${searchUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;padding:6px 10px;border-radius:9999px;border:1px solid #22d3ee;color:#0891b2;font:600 12px system-ui;text-decoration:none;">Park info ↗</a>`);
+  } else {
+    // No reliable booking URL — fall back to a Google search so the link always works.
+    parts.push(`<a href="${searchUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;padding:6px 10px;border-radius:9999px;border:1px solid #22d3ee;color:#0891b2;font:600 12px system-ui;text-decoration:none;">Search ↗</a>`);
   }
   const dirUrl = `https://www.google.com/maps/dir/?api=1&destination=${f.lat},${f.lng}`;
   parts.push(`<a href="${dirUrl}" target="_blank" rel="noopener" style="display:inline-block;margin:8px 0 0 6px;color:#525252;font:500 12px system-ui;">Directions ↗</a>`);
