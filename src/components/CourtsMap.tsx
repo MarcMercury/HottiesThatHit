@@ -24,6 +24,7 @@ export interface Facility {
   lights: boolean | null;
   category: string | null;
   region: string | null;
+  metro: string | null;
   phone: string | null;
   website: string | null;
   online_booking: boolean;
@@ -34,8 +35,9 @@ interface Props {
   facilities: Facility[];
 }
 
-// LA County center
-const LA_CENTER: [number, number] = [34.05, -118.35];
+// Default map view (US east-west span — auto-fits to visible markers on first render).
+const DEFAULT_CENTER: [number, number] = [39.5, -96.0];
+const DEFAULT_ZOOM = 4;
 
 const CATEGORY_LABEL: Record<string, string> = {
   'Public Open': 'Free park',
@@ -65,9 +67,23 @@ export default function CourtsMap({ facilities }: Props) {
   const [ready, setReady] = useState(false);
 
   // Filters
-  const allRegions = useMemo(
-    () => Array.from(new Set(facilities.map((f) => f.region).filter(Boolean))).sort() as string[],
+  const allMetros = useMemo(
+    () => Array.from(new Set(facilities.map((f) => f.metro).filter(Boolean))).sort() as string[],
     [facilities]
+  );
+  const [metro, setMetro] = useState<string>('');
+
+  const allRegions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          facilities
+            .filter((f) => !metro || f.metro === metro)
+            .map((f) => f.region)
+            .filter(Boolean)
+        )
+      ).sort() as string[],
+    [facilities, metro]
   );
   const allSources = useMemo(
     () => Array.from(new Set(facilities.map((f) => f.source_name))).sort(),
@@ -83,6 +99,7 @@ export default function CourtsMap({ facilities }: Props) {
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     return facilities.filter((f) => {
+      if (metro && f.metro !== metro) return false;
       if (!showOpen && f.category === 'Public Open') return false;
       if (!showManaged && f.category === 'Public Managed') return false;
       if (onlineOnly && !f.online_booking) return false;
@@ -92,7 +109,7 @@ export default function CourtsMap({ facilities }: Props) {
       }
       return true;
     });
-  }, [facilities, showOpen, showManaged, onlineOnly, region, search]);
+  }, [facilities, metro, showOpen, showManaged, onlineOnly, region, search]);
 
   // Init map once on mount
   useEffect(() => {
@@ -106,8 +123,8 @@ export default function CourtsMap({ facilities }: Props) {
       if (cancelled || !mapEl.current || mapRef.current) return;
 
       const map = L.map(mapEl.current, {
-        center: LA_CENTER,
-        zoom: 10,
+        center: DEFAULT_CENTER,
+        zoom: DEFAULT_ZOOM,
         zoomControl: true,
         scrollWheelZoom: true,
       });
@@ -178,6 +195,12 @@ export default function CourtsMap({ facilities }: Props) {
       }
       cluster.addTo(mapRef.current);
       clusterRef.current = cluster;
+
+      // Auto-fit the map to the visible markers (with sane bounds for empties).
+      if (visible.length > 0) {
+        const bounds = L.latLngBounds(visible.map((f) => [f.lat, f.lng] as [number, number]));
+        mapRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 13, animate: true });
+      }
     })();
     return () => {
       alive = false;
@@ -207,6 +230,7 @@ export default function CourtsMap({ facilities }: Props) {
               showOpen={showOpen} setShowOpen={setShowOpen}
               onlineOnly={onlineOnly} setOnlineOnly={setOnlineOnly}
               region={region} setRegion={setRegion}
+              metro={metro} setMetro={setMetro} allMetros={allMetros}
               allRegions={allRegions} allSources={allSources}
               visibleCount={visible.length} totalCount={facilities.length}
             />
@@ -220,6 +244,7 @@ export default function CourtsMap({ facilities }: Props) {
             showOpen={showOpen} setShowOpen={setShowOpen}
             onlineOnly={onlineOnly} setOnlineOnly={setOnlineOnly}
             region={region} setRegion={setRegion}
+            metro={metro} setMetro={setMetro} allMetros={allMetros}
             allRegions={allRegions} allSources={allSources}
             visibleCount={visible.length} totalCount={facilities.length}
           />
@@ -240,6 +265,7 @@ function FilterControls({
   showOpen, setShowOpen,
   onlineOnly, setOnlineOnly,
   region, setRegion,
+  metro, setMetro, allMetros,
   allRegions, allSources,
   visibleCount, totalCount,
 }: {
@@ -248,11 +274,45 @@ function FilterControls({
   showOpen: boolean; setShowOpen: (v: boolean) => void;
   onlineOnly: boolean; setOnlineOnly: (v: boolean) => void;
   region: string; setRegion: (v: string) => void;
+  metro: string; setMetro: (v: string) => void; allMetros: string[];
   allRegions: string[]; allSources: string[];
   visibleCount: number; totalCount: number;
 }) {
   return (
     <>
+      {allMetros.length > 1 && (
+        <div>
+          <p className="text-xs uppercase tracking-wider text-white/50 mb-2">City</p>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => { setMetro(''); setRegion(''); }}
+              className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition ${
+                metro === ''
+                  ? 'bg-hot-500 border-hot-400 text-white'
+                  : 'bg-ink-soft/60 border-ink-line text-white/70 hover:text-white hover:border-hot-500/60'
+              }`}
+            >
+              All
+            </button>
+            {allMetros.map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => { setMetro(m); setRegion(''); }}
+                className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition ${
+                  metro === m
+                    ? 'bg-hot-500 border-hot-400 text-white'
+                    : 'bg-ink-soft/60 border-ink-line text-white/70 hover:text-white hover:border-hot-500/60'
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div>
         <label className="block text-xs uppercase tracking-wider text-white/50 mb-1">Search</label>
         <input
@@ -348,7 +408,8 @@ function popupHtml(f: Facility): string {
   } else if (usableBookingUrl && f.category !== 'Public Open') {
     parts.push(`<a href="${escapeHtml(usableBookingUrl)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;padding:6px 10px;border-radius:9999px;border:1px solid #FF1F8F;color:#FF1F8F;font:600 12px system-ui;text-decoration:none;">Info / phone reservation</a>`);
   } else if (f.category === 'Public Open') {
-    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(f.name + ' tennis ' + (f.city ?? 'Los Angeles'))}`;
+    const fallbackCity = f.metro === 'NYC' ? 'New York' : f.metro === 'LA' ? 'Los Angeles' : '';
+    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(f.name + ' tennis ' + (f.city ?? fallbackCity))}`;
     parts.push(`<a href="${searchUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;padding:6px 10px;border-radius:9999px;border:1px solid #22d3ee;color:#0891b2;font:600 12px system-ui;text-decoration:none;">Park info ↗</a>`);
   }
   const dirUrl = `https://www.google.com/maps/dir/?api=1&destination=${f.lat},${f.lng}`;

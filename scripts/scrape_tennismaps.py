@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-"""Scrape tennismaps.com region 104 (greater LA) and emit
-/tmp/tennis/tennismaps_la.json — the input file consumed by
-scripts/build_la_courts_seed.py.
+"""Scrape a tennismaps.com region (default: 104, greater LA) and emit
+/tmp/tennis/tennismaps_<slug>.json — the input file consumed by the
+build_*_courts_seed.py scripts.
+
+Usage: scrape_tennismaps.py [region_id] [out_slug]
+    region_id : int  (default 104 = LA; 146 = NYC)
+    out_slug  : str  (default 'la'; produces tennismaps_<slug>.json)
 
 Why this exists
 ---------------
@@ -24,16 +28,23 @@ import re
 import sys
 import urllib.request
 
-URL = 'https://www.tennismaps.com/index.asp?regionid=104'
+REGION_ID = int(sys.argv[1]) if len(sys.argv) > 1 else 104
+OUT_SLUG = sys.argv[2] if len(sys.argv) > 2 else 'la'
+URL = f'https://www.tennismaps.com/index.asp?regionid={REGION_ID}'
 UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
 OUT_DIR = '/tmp/tennis'
-OUT_PATH = os.path.join(OUT_DIR, 'tennismaps_la.json')
-HTML_PATH = os.path.join(OUT_DIR, 'region104.html')
+OUT_PATH = os.path.join(OUT_DIR, f'tennismaps_{OUT_SLUG}.json')
+HTML_PATH = os.path.join(OUT_DIR, f'region{REGION_ID}.html')
 
 
 def fetch_html() -> str:
+    # tennismaps.com currently serves an expired TLS cert; verify=False is intentional.
+    import ssl
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
     req = urllib.request.Request(URL, headers={'User-Agent': UA})
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
         raw = resp.read()
     # Page is ascii but contains a few non-utf8 bytes in unrelated copy.
     return raw.decode('latin-1')

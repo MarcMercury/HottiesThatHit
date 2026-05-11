@@ -15,7 +15,7 @@ async function loadFacilities(): Promise<Facility[]> {
     const { data: facilities, error } = await supabase
       .from('facilities')
       .select(
-        'id, source_id, external_id, name, address, city, lat, lng, num_courts, surface, lights, category, region, phone, website, online_booking, facility_booking_url, active'
+        'id, source_id, external_id, name, address, city, lat, lng, num_courts, surface, lights, category, region, metro, phone, website, online_booking, facility_booking_url, active'
       )
       .eq('active', true)
       .not('lat', 'is', null)
@@ -48,6 +48,8 @@ export default async function CourtsPage() {
     total: facilities.length,
     online: facilities.filter((f) => f.online_booking).length,
     free: facilities.filter((f) => f.category === 'Public Open').length,
+    la: facilities.filter((f) => f.metro === 'LA').length,
+    nyc: facilities.filter((f) => f.metro === 'NYC').length,
   };
 
   return (
@@ -57,8 +59,8 @@ export default async function CourtsPage() {
         title="Find a Court"
         subtitle={
           stats.total > 0
-            ? `Every public tennis court in greater LA — ${stats.total} facilities, ${stats.online} bookable online, ${stats.free} free drop-in parks.`
-            : `Every public tennis court in greater LA. Map seeded from tennismaps.com region 104.`
+            ? `Every public tennis court in LA \u00b7 NYC \u2014 ${stats.total} facilities (${stats.la} LA / ${stats.nyc} NYC), ${stats.online} bookable online, ${stats.free} free drop-in parks.`
+            : `Every public tennis court in LA + NYC. Map seeded from tennismaps.com.`
         }
       />
 
@@ -163,9 +165,79 @@ export default async function CourtsPage() {
           />
         </div>
 
+        <h2 className="mt-12 mb-4 text-xl font-semibold text-white">NYC-area booking systems</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <BookingCard
+            title="NYC Parks Tennis"
+            tagline="Citywide reservation system for all five boroughs \u2014 Central Park, Astoria, Cunningham, Forest Park, Riverside, Lincoln Terrace, Marine Park, and 20+ more."
+            online="Online + permit ($100/yr or $15 single play)"
+            url="https://www.nycgovparks.org/reg/tennis"
+          />
+          <BookingCard
+            title="USTA Billie Jean King NTC"
+            tagline="Flushing Meadows. 22 outdoor + indoor hard / clay courts. Public reservations."
+            online="Online (USTA NTC)"
+            url="https://www.usta.com/en/home/play/adult-tennis/programs/national/usta-billie-jean-king-national-tennis-center.html"
+          />
+          <BookingCard
+            title="NYJTL \u2014 Cary Leeds + Harlem"
+            tagline="Cary Leeds Center for Tennis & Learning (Bronx, 22 courts) and Harlem Tennis Center."
+            online="Online (NYJTL)"
+            url="https://nyjtl.org/cary-leeds-center/"
+          />
+          <BookingCard
+            title="City Parks Foundation"
+            tagline="Operates Prospect Park Tennis Center (Brooklyn) and youth programs across NYC parks."
+            online="Online + drop-in"
+            url="https://www.cityparksfoundation.org/sports/"
+          />
+          <BookingCard
+            title="Alley Pond Tennis (Queens)"
+            tagline="Indoor + outdoor club at Alley Pond Park, Queens. 16 courts."
+            online="Online (club)"
+            url="https://alleypondtennis.com/"
+          />
+          <BookingCard
+            title="Nassau County Parks"
+            tagline="Eisenhower, Wantagh, North Woodmere, Cow Meadow \u2014 Long Island county-park tennis."
+            online="Online + leisure card"
+            url="https://www.nassaucountyny.gov/2961/Tennis"
+          />
+          <BookingCard
+            title="NY State Parks \u2014 Bethpage"
+            tagline="Bethpage State Park Tennis Center. Public reservations."
+            online="Online (state parks)"
+            url="https://parks.ny.gov/parks/27/details.aspx"
+          />
+          <BookingCard
+            title="Westchester County Parks"
+            tagline="Anthony F Veteran (Yonkers), Mt Vernon, Saxon Woods, Tibbetts Brook."
+            online="Online + park-pass"
+            url="https://parks.westchestergov.com/sports"
+          />
+          <BookingCard
+            title="Northern NJ municipal"
+            tagline="Althea Gibson TC (Meadowlands), Brookdale Park, Nishuane, Wayne Tennis Complex, Hudson County parks."
+            online="City-by-city"
+            url="https://www.essexcountynj.org/parks/"
+          />
+          <BookingCard
+            title="Free park courts (NYC area)"
+            tagline={`${stats.nyc ? Math.max(stats.nyc - 60, 400) : '~500'} drop-in park courts \u2014 NYC city courts require a Parks tennis permit.`}
+            online="Permit required (NYC) / drop-in (suburbs)"
+            url="https://www.nycgovparks.org/permits/tennis-permits"
+          />
+          <BookingCard
+            title="TennisMaps NYC"
+            tagline="Underlying directory for the NYC metro \u2014 includes Long Island, Westchester, and northern NJ."
+            online="External directory"
+            url="https://www.tennismaps.com/index.asp?regionid=146"
+          />
+        </div>
+
         <p className="mt-10 text-center text-xs text-white/40">
           Marker data seeded from <a href="https://www.tennismaps.com/index.asp?regionid=104" className="text-hot-300/80 hover:text-hot-300">tennismaps.com</a>{' '}
-          (region 104) and Hotties That Hit&apos;s own scrapers. Spot something missing or wrong?{' '}
+          (LA region 104 + NYC region 146) and Hotties That Hit&apos;s own scrapers. Spot something missing or wrong?{' '}
           <a href="mailto:hello@hottiesthathit.com" className="text-hot-300/80 hover:text-hot-300">hello@hottiesthathit.com</a>.
         </p>
       </section>

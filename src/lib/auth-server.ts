@@ -1,4 +1,5 @@
 import { getServiceClient } from '@/lib/supabase';
+import { isAdminEmail } from '@/lib/admin';
 
 /**
  * Verify a Supabase access token from the `Authorization: Bearer ...` header
@@ -24,6 +25,8 @@ export async function getUserFromAuthHeader(authHeader: string | null) {
 
 export async function requireAdmin(authHeader: string | null) {
   const ctx = await getUserFromAuthHeader(authHeader);
-  if (!ctx?.profile?.is_admin) return null;
+  if (!ctx) return null;
+  if (!isAdminEmail(ctx.user.email) && !ctx.profile?.is_admin) return null;
+  if (!isAdminEmail(ctx.user.email)) return null;
   return ctx;
 }
