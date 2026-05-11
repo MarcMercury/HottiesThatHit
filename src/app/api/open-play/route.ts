@@ -14,6 +14,7 @@ interface CreateBody {
   max_ntrp?: number | null;
   title?: string | null;
   notes?: string | null;
+  court_reserved?: boolean;
 }
 
 // GET /api/open-play
@@ -33,7 +34,7 @@ export async function GET(req: Request) {
     .from('open_play_events')
     .select(
       `id, host_id, facility_id, court_number, start_time, end_time,
-       total_spots, min_ntrp, max_ntrp, title, notes, status, created_at,
+       total_spots, min_ntrp, max_ntrp, title, notes, court_reserved, status, created_at,
        host:profiles!host_id ( id, username, ntrp_rating, image_url_1 ),
        facility:facilities!facility_id ( id, name, address, city, region, lat, lng ),
        participants:open_play_participants (
@@ -135,6 +136,7 @@ export async function POST(req: Request) {
     max_ntrp: typeof body.max_ntrp === 'number' ? body.max_ntrp : null,
     title: body.title?.trim() || null,
     notes: body.notes?.trim() || null,
+    court_reserved: body.court_reserved === true,
     status: total_spots <= 1 ? 'full' : 'open',
   };
 

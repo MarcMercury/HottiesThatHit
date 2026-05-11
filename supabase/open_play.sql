@@ -25,6 +25,9 @@ create table if not exists hotties.open_play_events (
   title text,
   notes text,
 
+  -- Did the host already reserve the court? Simple yes/no flag.
+  court_reserved boolean not null default false,
+
   -- 'open' | 'full' | 'cancelled' | 'completed'
   -- We recompute status in the API but store it for cheap filtering.
   status text not null default 'open',
@@ -48,6 +51,10 @@ create index if not exists open_play_start_idx on hotties.open_play_events (star
 create index if not exists open_play_status_idx on hotties.open_play_events (status, start_time);
 create index if not exists open_play_host_idx on hotties.open_play_events (host_id);
 create index if not exists open_play_facility_idx on hotties.open_play_events (facility_id);
+
+-- Backfill column for existing deployments (no-op if already present).
+alter table hotties.open_play_events
+  add column if not exists court_reserved boolean not null default false;
 
 drop trigger if exists open_play_set_updated_at on hotties.open_play_events;
 create trigger open_play_set_updated_at

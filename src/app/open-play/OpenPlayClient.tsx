@@ -43,6 +43,7 @@ export interface OpenPlayEvent {
   max_ntrp: number | null;
   title: string | null;
   notes: string | null;
+  court_reserved: boolean;
   status: 'open' | 'full' | 'cancelled' | 'completed';
   created_at: string;
   host: ProfileLite | null;
@@ -106,6 +107,41 @@ function addHoursLocal(local: string, hours: number): string {
   d.setHours(d.getHours() + hours);
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Build a Google Calendar "render" URL — works in any browser, no OAuth.
+// https://calendar.google.com/calendar/render?action=TEMPLATE&text=...&dates=...&details=...&location=...
+function googleCalendarUrl(ev: OpenPlayEvent): string {
+  const fmt = (iso: string) =>
+    new Date(iso).toISOString().replace(/[-:]|\.\d{3}/g, ''); // YYYYMMDDTHHMMSSZ
+  const dates = `${fmt(ev.start_time)}/${fmt(ev.end_time)}`;
+
+  const title = ev.title?.trim() || 'Open Play (Tennis)';
+  const locationParts = [
+    ev.facility?.name,
+    ev.facility?.address,
+    ev.facility?.city,
+  ].filter(Boolean);
+  const location = locationParts.join(', ');
+
+  const detailLines = [
+    `Hosted by @${ev.host?.username ?? 'unknown'} on Hotties That Hit`,
+    `Level: ${levelLabel(ev.min_ntrp, ev.max_ntrp)}`,
+    `Spots: ${ev.total_spots} total`,
+    ev.court_number ? `Court: ${ev.court_number}` : null,
+    ev.court_reserved ? 'Court is reserved' : 'Court NOT reserved — show up & wait',
+    ev.notes ? `\n${ev.notes}` : null,
+    `\nhttps://www.slapp.fun/open-play`,
+  ].filter(Boolean);
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates,
+    details: detailLines.join('\n'),
+    location,
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
 // ---------- main component ----------
@@ -387,6 +423,17 @@ function EventCard({
               <span className="text-white/50"> · Court {ev.court_number}</span>
             )}
           </p>
+          <p className="mt-1 text-xs">
+            {ev.court_reserved ? (
+              <span className="chip border-court-ball/40 bg-court-ball/10 text-court-ball">
+                Court reserved
+              </span>
+            ) : (
+              <span className="chip border-white/20 bg-white/5 text-white/60">
+                Court not reserved
+              </span>
+            )}
+          </p>
           {ev.notes && (
             <p className="mt-2 text-sm text-white/70 whitespace-pre-wrap">{ev.notes}</p>
           )}
@@ -407,7 +454,20 @@ function EventCard({
             )}
           </div>
           {!ended && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
+              <a
+                href={googleCalendarUrl(ev)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-ghost text-xs px-3 py-1.5"
+                title="Open in Google Calendar"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" />
+                </svg>
+                Add to Calendar
+              </a>
               {isHost ? (
                 <button
                   onClick={onCancel}
@@ -447,14 +507,38 @@ function EventCard({
           .map((p) => (
             <ParticipantChip key={p.user_id} p={p} />
           ))}
-        {Array.from({ length: open }).map((_, i) => (
-          <span
-            key={`open-${i}`}
-            className="inline-flex items-center gap-1 rounded-full border border-dashed border-white/20 px-2.5 py-1 text-xs text-white/40"
-          >
-            Open
-          </span>
-        ))}
+        {Array.from({ length: open }).map((_, i) => {
+          const canClaim = !!currentUserId && !isHost && !isJoined && !ended;
+          const title = !currentUserId
+            ? 'Log in to claim a spot'
+            : isHost
+              ? "You're the host"
+              : isJoined
+                ? "You're already in"
+                : ended
+                  ? 'Event has ended'
+                  : 'Claim this spot';
+          return canClaim ? (
+            <button
+              key={`open-${i}`}
+              type="button"
+              onClick={onJoin}
+              disabled={busy}
+              title={title}
+              className="inline-flex items-center gap-1 rounded-full border border-dashed border-white/30 px-2.5 py-1 text-xs text-white/60 transition hover:border-hot-400 hover:bg-hot-500/10 hover:text-hot-200 disabled:opacity-50"
+            >
+              {busy ? 'Joining…' : 'Open'}
+            </button>
+          ) : (
+            <span
+              key={`open-${i}`}
+              title={title}
+              className="inline-flex items-center gap-1 rounded-full border border-dashed border-white/20 px-2.5 py-1 text-xs text-white/40"
+            >
+              Open
+            </span>
+          );
+        })}
       </div>
     </li>
   );
@@ -515,6 +599,7 @@ function CreateMatchModal({
   );
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
+  const [courtReserved, setCourtReserved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -584,6 +669,7 @@ function CreateMatchModal({
           max_ntrp: maxN,
           title: title || null,
           notes: notes || null,
+          court_reserved: courtReserved,
         }),
       });
       if (!res.ok) {
@@ -693,6 +779,24 @@ function CreateMatchModal({
               maxLength={16}
               className="w-full bg-ink-soft/60 border border-ink-line rounded-md px-3 py-2 text-sm text-white placeholder:text-white/40"
             />
+          </div>
+
+          {/* Court reserved? */}
+          <div>
+            <label className="flex items-center gap-2 text-sm text-white/80 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={courtReserved}
+                onChange={(e) => setCourtReserved(e.target.checked)}
+                className="h-4 w-4 rounded border-ink-line bg-ink-soft text-hot-500 focus:ring-hot-500"
+              />
+              <span>
+                Court reserved?{' '}
+                <span className="text-white/50">
+                  ({courtReserved ? 'Yes' : 'No'})
+                </span>
+              </span>
+            </label>
           </div>
 
           {/* When */}
