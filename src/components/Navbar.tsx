@@ -12,6 +12,7 @@ const links = [
   { href: '/open-play', label: 'Open Play' },
   { href: '/players', label: 'Find Players' },
   { href: '/matrix', label: 'Hot vs Hit' },
+  { href: '/tennis-hottie', label: 'What Tennis Hottie?' },
 ];
 
 export function Navbar() {
