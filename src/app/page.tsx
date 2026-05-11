@@ -57,8 +57,8 @@ export default function Home() {
             desc="Every public court in LA, alphabetical, with a one-tap link to the operator's reservation page." emoji="🎾" />
           <FeatureCard href="/courts" title="Find a Court" tag="Map"
             desc="Filter by surface, lights, location, fee. Save your favorites." emoji="📍" />
-          <FeatureCard href="/players" title="Find Players" tag="Soon"
-            desc="Match with hitting partners by NTRP, schedule, and neighborhood." emoji="💗" />
+          <FeatureCard href="/open-play" title="Open Play" tag="New"
+            desc="Post a match you've set up. Claim a spot in someone else's. Show up and hit." emoji="🤝" />
         </div>
       </section>
 

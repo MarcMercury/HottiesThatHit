@@ -15,6 +15,7 @@ interface AdminUser {
   is_admin: boolean;
   image_url_1: string | null;
   created_at: string;
+  last_sign_in_at: string | null;
 }
 
 export default function AdminPage() {
@@ -25,6 +26,8 @@ export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const authedFetch = useCallback(
     async (input: RequestInfo, init?: RequestInit) => {
@@ -33,21 +36,26 @@ export default function AdminPage() {
       const headers = new Headers(init?.headers);
       if (token) headers.set('authorization', `Bearer ${token}`);
       headers.set('content-type', 'application/json');
-      return fetch(input, { ...init, headers });
+      return fetch(input, { ...init, headers, cache: 'no-store' });
     },
     [supabase],
   );
 
   const load = useCallback(async () => {
     setErr(null);
-    const res = await authedFetch('/api/admin/users');
-    if (!res.ok) {
-      setErr((await res.json().catch(() => ({}))).error ?? 'Failed to load users');
-      setUsers([]);
-      return;
+    setRefreshing(true);
+    try {
+      const res = await authedFetch(`/api/admin/users?t=${Date.now()}`);
+      if (!res.ok) {
+        setErr((await res.json().catch(() => ({}))).error ?? 'Failed to load users');
+        setUsers([]);
+        return;
+      }
+      const json = (await res.json()) as { users: AdminUser[] };
+      setUsers(json.users);
+    } finally {
+      setRefreshing(false);
     }
-    const json = (await res.json()) as { users: AdminUser[] };
-    setUsers(json.users);
   }, [authedFetch]);
 
   useEffect(() => {
@@ -105,6 +113,39 @@ export default function AdminPage() {
     await load();
   };
 
+  const resetPassword = async (u: AdminUser) => {
+    if (!confirm(`Send a password reset link to ${u.email}?`)) return;
+    setBusyId(u.id);
+    setNotice(null);
+    setErr(null);
+    const res = await authedFetch('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'reset_password', id: u.id }),
+    });
+    setBusyId(null);
+    const json = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      action_link?: string | null;
+      email?: string;
+    };
+    if (!res.ok) {
+      setErr(json.error ?? 'Password reset failed');
+      return;
+    }
+    if (json.action_link) {
+      try {
+        await navigator.clipboard.writeText(json.action_link);
+        setNotice(
+          `Reset link for ${json.email} copied to clipboard (also emailed if SMTP is configured).`,
+        );
+      } catch {
+        setNotice(`Reset link generated for ${json.email}: ${json.action_link}`);
+      }
+    } else {
+      setNotice(`Password reset email sent to ${json.email}.`);
+    }
+  };
+
   if (loading || users === null) {
     return <main className="mx-auto max-w-5xl px-4 py-12 text-white/60">Loading…</main>;
   }
@@ -118,14 +159,20 @@ export default function AdminPage() {
             {users.length} user{users.length === 1 ? '' : 's'}
           </p>
         </div>
-        <button onClick={load} className="btn-ghost">
-          Refresh
+        <button onClick={load} disabled={refreshing} className="btn-ghost disabled:opacity-50">
+          {refreshing ? 'Refreshing…' : 'Refresh'}
         </button>
       </div>
 
       {err && (
         <div className="card mt-6 border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
           {err}
+        </div>
+      )}
+
+      {notice && (
+        <div className="card mt-6 border-emerald-500/40 bg-emerald-500/10 p-4 text-sm text-emerald-100 break-all">
+          {notice}
         </div>
       )}
 
@@ -138,6 +185,7 @@ export default function AdminPage() {
               <th className="px-4 py-3">NTRP</th>
               <th className="px-4 py-3">Admin</th>
               <th className="px-4 py-3">Joined</th>
+              <th className="px-4 py-3">Last login</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -199,20 +247,34 @@ export default function AdminPage() {
                 <td className="px-4 py-3 text-white/50 text-xs">
                   {new Date(u.created_at).toLocaleDateString()}
                 </td>
+                <td className="px-4 py-3 text-white/50 text-xs">
+                  {u.last_sign_in_at
+                    ? new Date(u.last_sign_in_at).toLocaleString()
+                    : 'never'}
+                </td>
                 <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => deleteUser(u)}
-                    disabled={busyId === u.id || u.id === user?.id}
-                    className="text-xs text-red-300 hover:text-red-200 disabled:opacity-30"
-                  >
-                    delete
-                  </button>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => resetPassword(u)}
+                      disabled={busyId === u.id || !u.email}
+                      className="text-xs text-hot-300 hover:text-hot-200 disabled:opacity-30"
+                    >
+                      reset password
+                    </button>
+                    <button
+                      onClick={() => deleteUser(u)}
+                      disabled={busyId === u.id || u.id === user?.id}
+                      className="text-xs text-red-300 hover:text-red-200 disabled:opacity-30"
+                    >
+                      delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
             {users.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-white/50">
+                <td colSpan={7} className="px-4 py-8 text-center text-white/50">
                   No users yet.
                 </td>
               </tr>
