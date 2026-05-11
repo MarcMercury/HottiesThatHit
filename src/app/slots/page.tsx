@@ -108,7 +108,7 @@ export default async function SlotsPage({
   const zip =
     searchParams.zip && searchParams.zip !== 'all' ? searchParams.zip : null;
 
-  const { regions, zips, facilities } = await loadData(region, zip);
+  const { regions, facilities } = await loadData(region, zip);
 
   const bookable = facilities.filter((f) => !!f.booking_url).length;
 
@@ -116,8 +116,8 @@ export default async function SlotsPage({
     <main>
       <PageHeader
         eyebrow="Courts & reservations"
-        title="LA Public Tennis Courts"
-        subtitle="Every public court in greater LA, alphabetical, with a one-tap link to the operator's reservation page."
+        title="Public Tennis Courts"
+        subtitle="Every public court we track, alphabetical, with a one-tap link to the operator's reservation page."
       />
 
       <section className="mx-auto max-w-6xl px-4 py-6">
@@ -127,14 +127,14 @@ export default async function SlotsPage({
         >
           <div className="md:w-72">
             <label className="block text-xs uppercase tracking-wide text-white/50 mb-2">
-              Area of LA
+              Region
             </label>
             <select
               name="region"
               defaultValue={region ?? 'all'}
               className="w-full bg-ink-soft/60 border border-ink-line rounded-md px-3 py-2 text-sm text-white"
             >
-              <option value="all">All of greater LA</option>
+              <option value="all">All regions</option>
               {regions.map((r) => (
                 <option key={r} value={r}>
                   {r}
@@ -147,18 +147,16 @@ export default async function SlotsPage({
             <label className="block text-xs uppercase tracking-wide text-white/50 mb-2">
               ZIP code
             </label>
-            <select
+            <input
+              type="text"
               name="zip"
-              defaultValue={zip ?? 'all'}
-              className="w-full bg-ink-soft/60 border border-ink-line rounded-md px-3 py-2 text-sm text-white"
-            >
-              <option value="all">All ZIPs</option>
-              {zips.map((z) => (
-                <option key={z} value={z}>
-                  {z}
-                </option>
-              ))}
-            </select>
+              defaultValue={zip ?? ''}
+              placeholder="e.g. 10003"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={5}
+              className="w-full bg-ink-soft/60 border border-ink-line rounded-md px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-hot-400"
+            />
           </div>
 
           <button
@@ -171,8 +169,8 @@ export default async function SlotsPage({
 
         <p className="mt-3 text-xs text-white/50">
           {facilities.length} {facilities.length === 1 ? 'court' : 'courts'}
-          {region ? ` in ${region}` : ' in greater LA'} · {bookable} with online
-          reservations
+          {region ? ` in ${region}` : ''}
+          {zip ? ` near ${zip}` : ''} · {bookable} with online reservations
         </p>
 
         <div className="mt-6">
@@ -187,7 +185,7 @@ export default async function SlotsPage({
                   destLat: f.lat ?? undefined,
                   destLng: f.lng ?? undefined,
                   destAddress:
-                    f.address ?? `${f.name}, ${f.city ?? 'Los Angeles'}`,
+                    f.address ?? `${f.name}${f.city ? `, ${f.city}` : ''}`,
                 });
                 return (
                   <li

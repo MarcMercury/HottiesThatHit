@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { getBrowserClient } from '@/lib/supabase-browser';
+import { MyFavoritesList } from '@/components/MyFavoritesList';
 import { revalidatePlayers } from './actions';
 
 const NTRP_OPTIONS = [
@@ -256,6 +257,20 @@ export default function ProfilePage() {
           {busy ? 'Saving…' : 'Save profile'}
         </button>
       </form>
+
+      <section className="card p-6 mt-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-white font-semibold">Favorite courts</h2>
+            <p className="text-white/60 text-xs mt-1">
+              Tap the heart on any court in Find a Court to save it here.
+            </p>
+          </div>
+        </div>
+        <div className="mt-4">
+          <MyFavoritesList />
+        </div>
+      </section>
     </main>
   );
 }

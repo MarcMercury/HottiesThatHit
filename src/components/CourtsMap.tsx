@@ -8,6 +8,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Map as LMap, Marker as LMarker, LayerGroup } from 'leaflet';
+import { useFavorites } from '@/lib/favorites';
 
 export interface Facility {
   id: string;
@@ -72,6 +73,13 @@ export default function CourtsMap({ facilities }: Props) {
   const mapRef = useRef<LMap | null>(null);
   const clusterRef = useRef<LayerGroup | null>(null);
   const [ready, setReady] = useState(false);
+
+  // Favorites: keep a ref so popup click handlers always see the latest set.
+  const { favorites, isFavorite, toggle, signedIn } = useFavorites();
+  const favRef = useRef(favorites);
+  favRef.current = favorites;
+  const signedInRef = useRef(signedIn);
+  signedInRef.current = signedIn;
 
   // Filters
   const allMetros = useMemo(
@@ -205,7 +213,29 @@ export default function CourtsMap({ facilities }: Props) {
         const color = CATEGORY_COLOR[f.category ?? ''] ?? '#9ca3af';
         const icon = makeIcon(L, color, f.online_booking);
         const m: LMarker = L.marker([f.lat, f.lng], { icon, title: f.name });
-        m.bindPopup(popupHtml(f), { minWidth: 220, maxWidth: 280 });
+        m.bindPopup(popupHtml(f, favRef.current.has(f.id)), { minWidth: 220, maxWidth: 280 });
+        m.on('popupopen', () => {
+          const el = m.getPopup()?.getElement();
+          if (!el) return;
+          const btn = el.querySelector<HTMLButtonElement>('[data-fav]');
+          if (!btn) return;
+          const paint = (active: boolean) => {
+            btn.setAttribute('aria-pressed', String(active));
+            btn.title = !signedInRef.current
+              ? 'Sign in to save this court'
+              : active
+                ? 'Remove from favorites'
+                : 'Save to favorites';
+            btn.innerHTML = favoriteButtonInner(active);
+          };
+          paint(favRef.current.has(f.id));
+          btn.onclick = async (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const next = await toggle(f.id);
+            paint(next);
+          };
+        });
         cluster.addLayer(m);
       }
       cluster.addTo(mapRef.current);
@@ -220,7 +250,25 @@ export default function CourtsMap({ facilities }: Props) {
     return () => {
       alive = false;
     };
+    // `toggle` is stable enough across renders; `favorites` only repaints
+    // already-open popups so it doesn't belong in deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, ready]);
+
+  // When the favorite set changes, just repaint the currently-open popup
+  // (if any) without re-creating every marker on the map.
+  useEffect(() => {
+    const container = mapEl.current;
+    if (!container) return;
+    const buttons = container.querySelectorAll<HTMLButtonElement>('[data-fav]');
+    buttons.forEach((btn) => {
+      const id = btn.dataset.fav;
+      if (!id) return;
+      const active = favorites.has(id);
+      btn.setAttribute('aria-pressed', String(active));
+      btn.innerHTML = favoriteButtonInner(active);
+    });
+  }, [favorites]);
 
   return (
     <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
@@ -433,14 +481,23 @@ function resolveBookingUrl(url: string | null): string | null {
   return url;
 }
 
-function popupHtml(f: Facility): string {
+function favoriteButtonInner(active: boolean): string {
+  const color = active ? '#FF1F8F' : 'transparent';
+  const stroke = active ? '#FF1F8F' : '#525252';
+  return `<svg width="18" height="18" viewBox="0 0 24 24" fill="${color}" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
+}
+
+function popupHtml(f: Facility, isFav: boolean): string {
   const parts: string[] = [];
-  parts.push(`<div style="font:600 14px system-ui;color:#0a0a0a;margin-bottom:4px;">${escapeHtml(f.name)}</div>`);
+  parts.push(`<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px;">`);
+  parts.push(`<div style="font:600 14px system-ui;color:#0a0a0a;">${escapeHtml(f.name)}</div>`);
+  parts.push(`<button type="button" data-fav="${f.id}" aria-pressed="${isFav}" title="Save to favorites" style="flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9999px;border:1px solid #e5e5e5;background:white;cursor:pointer;padding:0;">${favoriteButtonInner(isFav)}</button>`);
+  parts.push(`</div>`);
   const meta: string[] = [];
   if (f.num_courts) meta.push(`${f.num_courts} courts`);
   if (f.region) meta.push(f.region);
   if (f.category) meta.push(CATEGORY_LABEL[f.category] ?? f.category);
-  parts.push(`<div style="font:12px system-ui;color:#525252;margin-bottom:6px;">${meta.join(' · ')}</div>`);
+  if (meta.length) parts.push(`<div style="font:12px system-ui;color:#525252;margin-bottom:6px;">${meta.join(' · ')}</div>`);
   if (f.address) {
     parts.push(`<div style="font:12px system-ui;color:#737373;margin-bottom:6px;">${escapeHtml(f.address)}</div>`);
   }
