@@ -228,6 +228,12 @@ export default async function CourtsPage() {
             url="https://www.nycgovparks.org/permits/tennis-permits"
           />
           <BookingCard
+            title="Tennis in Manhattan"
+            tagline="Curated guide to every public and private court in Manhattan \u2014 permits, indoor clubs, bubbles, and seasonal courts."
+            online="External directory"
+            url="https://tennisinmanhattan.com/"
+          />
+          <BookingCard
             title="TennisMaps NYC"
             tagline="Underlying directory for the NYC metro \u2014 includes Long Island, Westchester, and northern NJ."
             online="External directory"
