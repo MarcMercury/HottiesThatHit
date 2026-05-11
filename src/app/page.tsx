@@ -21,7 +21,7 @@ export default function Home() {
               Find courts, find players, hit harder.
             </p>
             <div className="mt-6 sm:mt-7 flex flex-wrap gap-3">
-              <Link href="/slots" className="btn-primary">
+              <Link href="/courts" className="btn-primary">
                 See tonight&apos;s open courts
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
@@ -53,12 +53,12 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-4 py-10 md:py-12">
         <h2 className="font-display text-2xl sm:text-3xl text-white mb-5 sm:mb-6">The whole court, covered.</h2>
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-          <FeatureCard href="/slots" title="Reservations" tag="Links"
-            desc="Every public court in LA, alphabetical, with a one-tap link to the operator's reservation page." emoji="🎾" />
-          <FeatureCard href="/courts" title="Find a Court" tag="Map"
-            desc="Filter by surface, lights, location, fee. Save your favorites." emoji="📍" />
+          <FeatureCard href="/courts" title="Find a Court" tag="Map + List"
+            desc="Every public court in LA + NYC on a map or as a sortable list. Filter by surface, lights, location, fee. Save your favorites." emoji="📍" />
           <FeatureCard href="/open-play" title="Open Play" tag="New"
             desc="Post a match you've set up. Claim a spot in someone else's. Show up and hit." emoji="🤝" />
+          <FeatureCard href="/players" title="Find Players" tag="Hitters"
+            desc="Browse hitters near you, filter by level, and ping a partner before your next session." emoji="🎾" />
         </div>
       </section>
 
@@ -72,7 +72,7 @@ export default function Home() {
               </p>
               <p className="text-white/50 text-sm">SF Bay & NYC dropping next.</p>
             </div>
-            <Link href="/slots" className="btn-primary self-start sm:self-auto">Play tonight</Link>
+            <Link href="/courts" className="btn-primary self-start sm:self-auto">Play tonight</Link>
           </div>
         </div>
       </section>
@@ -87,7 +87,7 @@ export default function Home() {
             We do it for you. One screen, every court, every night. Pink courts only.
           </p>
           <div className="relative mt-6">
-            <Link href="/slots" className="btn-primary">Show me courts →</Link>
+            <Link href="/courts" className="btn-primary">Show me courts →</Link>
           </div>
         </div>
       </section>

@@ -110,6 +110,7 @@ export default function CourtsMap({ facilities }: Props) {
   const [onlineOnly, setOnlineOnly] = useState(false);
   const [region, setRegion] = useState<string>('');
   const [search, setSearch] = useState('');
+  const [view, setView] = useState<'map' | 'list'>('map');
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -314,11 +315,175 @@ export default function CourtsMap({ facilities }: Props) {
         </div>
       </aside>
 
-      {/* Map */}
-      <div className="card overflow-hidden border-ink-line h-[60vh] min-h-[360px] sm:h-[65vh] lg:h-[70vh] lg:min-h-[480px]">
-        <div ref={mapEl} className="w-full h-full" />
+      {/* Map + List */}
+      <div className="space-y-3">
+        <ViewToggle view={view} setView={setView} mapRef={mapRef} />
+        <div className={view === 'map' ? 'block' : 'hidden'}>
+          <div className="card overflow-hidden border-ink-line h-[60vh] min-h-[360px] sm:h-[65vh] lg:h-[70vh] lg:min-h-[480px]">
+            <div ref={mapEl} className="w-full h-full" />
+          </div>
+        </div>
+        {view === 'list' && (
+          <CourtsList facilities={visible} isFavorite={isFavorite} toggleFavorite={toggle} />
+        )}
       </div>
     </div>
+  );
+}
+
+function ViewToggle({
+  view,
+  setView,
+  mapRef,
+}: {
+  view: 'map' | 'list';
+  setView: (v: 'map' | 'list') => void;
+  mapRef: React.MutableRefObject<LMap | null>;
+}) {
+  const switchTo = (next: 'map' | 'list') => {
+    setView(next);
+    if (next === 'map') {
+      // Leaflet needs a size invalidation after being un-hidden so tiles render correctly.
+      requestAnimationFrame(() => mapRef.current?.invalidateSize());
+    }
+  };
+  return (
+    <div className="inline-flex rounded-full border border-ink-line bg-ink-soft/60 p-1 text-xs font-semibold">
+      <button
+        type="button"
+        onClick={() => switchTo('map')}
+        className={`px-3 py-1.5 rounded-full transition ${
+          view === 'map' ? 'bg-hot-500 text-white' : 'text-white/70 hover:text-white'
+        }`}
+      >
+        Map
+      </button>
+      <button
+        type="button"
+        onClick={() => switchTo('list')}
+        className={`px-3 py-1.5 rounded-full transition ${
+          view === 'list' ? 'bg-hot-500 text-white' : 'text-white/70 hover:text-white'
+        }`}
+      >
+        List
+      </button>
+    </div>
+  );
+}
+
+function CourtsList({
+  facilities,
+  isFavorite,
+  toggleFavorite,
+}: {
+  facilities: Facility[];
+  isFavorite: (id: string) => boolean;
+  toggleFavorite: (id: string) => void | Promise<boolean>;
+}) {
+  if (facilities.length === 0) {
+    return (
+      <div className="card p-8 text-center text-white/60">
+        <p>No courts match those filters.</p>
+      </div>
+    );
+  }
+  return (
+    <ul className="card divide-y divide-ink-line/60">
+      {facilities.map((f) => {
+        const usableBookingUrl = resolveBookingUrl(f.booking_url);
+        const fallbackCity = f.metro === 'NYC' ? 'New York' : f.metro === 'LA' ? 'Los Angeles' : '';
+        const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(
+          f.name + ' tennis ' + (f.city ?? fallbackCity)
+        )}`;
+        const dirHref = `https://www.google.com/maps/dir/?api=1&destination=${f.lat},${f.lng}`;
+        const meta = [
+          f.region ?? f.city ?? f.metro,
+          f.num_courts ? `${f.num_courts} courts` : null,
+          f.surface,
+          f.lights ? 'lights' : null,
+          f.category ? CATEGORY_LABEL[f.category] ?? f.category : null,
+        ]
+          .filter(Boolean)
+          .join(' · ');
+        const fav = isFavorite(f.id);
+        return (
+          <li
+            key={f.id}
+            className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+          >
+            <div className="min-w-0 flex items-start gap-2">
+              <button
+                type="button"
+                onClick={() => toggleFavorite(f.id)}
+                aria-pressed={fav}
+                aria-label={fav ? 'Remove from favorites' : 'Save to favorites'}
+                title={fav ? 'Remove from favorites' : 'Save to favorites'}
+                className="mt-0.5 shrink-0 text-hot-400 hover:text-hot-300"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill={fav ? 'currentColor' : 'none'}
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+              </button>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-white truncate">{f.name}</p>
+                <p className="text-xs text-white/50">{meta}</p>
+                {f.address && (
+                  <p className="text-[11px] text-white/40 truncate">{f.address}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-3 sm:gap-2 sm:shrink-0">
+              <a
+                href={dirHref}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-white/60 hover:text-white"
+              >
+                Directions ↗
+              </a>
+              {f.online_booking && usableBookingUrl ? (
+                <a
+                  href={usableBookingUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs whitespace-nowrap px-3 py-1.5 rounded-md bg-hot-500/20 text-hot-100 border border-hot-500/30 hover:bg-hot-500/40 hover:text-white transition"
+                >
+                  Reserve ↗
+                </a>
+              ) : usableBookingUrl && f.category !== 'Public Open' ? (
+                <a
+                  href={usableBookingUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs whitespace-nowrap px-3 py-1.5 rounded-md border border-hot-500/30 text-hot-200 hover:text-white hover:border-hot-500/60 transition"
+                >
+                  Info ↗
+                </a>
+              ) : (
+                <a
+                  href={searchUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs whitespace-nowrap px-3 py-1.5 rounded-md border border-cyan-500/30 text-cyan-200 hover:text-white hover:border-cyan-400/60 transition"
+                >
+                  Search ↗
+                </a>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

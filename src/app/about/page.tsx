@@ -30,7 +30,7 @@ export default function AboutPage() {
         </div>
 
         <div className="mt-10 not-prose">
-          <Link href="/slots" className="btn-primary">See open courts</Link>
+          <Link href="/courts" className="btn-primary">See open courts</Link>
         </div>
       </section>
     </main>

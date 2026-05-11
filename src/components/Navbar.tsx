@@ -8,7 +8,6 @@ import { useAuth } from '@/lib/auth-context';
 import { isAdminEmail } from '@/lib/admin';
 
 const links = [
-  { href: '/slots', label: 'Reservations' },
   { href: '/courts', label: 'Find a Court' },
   { href: '/open-play', label: 'Open Play' },
   { href: '/players', label: 'Find Players' },
