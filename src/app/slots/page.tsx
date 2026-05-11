@@ -99,14 +99,16 @@ async function loadData(region: string | null, zip: string | null) {
 export default async function SlotsPage({
   searchParams,
 }: {
-  searchParams: { region?: string };
+  searchParams: { region?: string; zip?: string };
 }) {
   const region =
     searchParams.region && searchParams.region !== 'all'
       ? searchParams.region
       : null;
+  const zip =
+    searchParams.zip && searchParams.zip !== 'all' ? searchParams.zip : null;
 
-  const { regions, facilities } = await loadData(region);
+  const { regions, zips, facilities } = await loadData(region, zip);
 
   const bookable = facilities.filter((f) => !!f.booking_url).length;
 
@@ -136,6 +138,24 @@ export default async function SlotsPage({
               {regions.map((r) => (
                 <option key={r} value={r}>
                   {r}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="md:w-56">
+            <label className="block text-xs uppercase tracking-wide text-white/50 mb-2">
+              ZIP code
+            </label>
+            <select
+              name="zip"
+              defaultValue={zip ?? 'all'}
+              className="w-full bg-ink-soft/60 border border-ink-line rounded-md px-3 py-2 text-sm text-white"
+            >
+              <option value="all">All ZIPs</option>
+              {zips.map((z) => (
+                <option key={z} value={z}>
+                  {z}
                 </option>
               ))}
             </select>
