@@ -19,3 +19,7 @@ tsconfig.tsbuildinfo
 
 # Local-only handoff doc — contains live credentials, never commit
 PROJECT_HANDOFF.md
+
+# Link verifier output (regenerate via scripts/verify_court_links.ts)
+link_verification_report.md
+link_verification_report.json
