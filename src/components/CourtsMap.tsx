@@ -49,6 +49,13 @@ const CATEGORY_COLOR: Record<string, string> = {
   'Public Open': '#22d3ee', // cyan — free
 };
 
+// Pull a 5-digit US ZIP out of a free-form address string.
+function extractZip(address: string | null): string | null {
+  if (!address) return null;
+  const m = address.match(/\b(\d{5})(?:-\d{4})?\b/);
+  return m ? m[1] : null;
+}
+
 function makeIcon(L: typeof import('leaflet'), color: string, online: boolean) {
   const ring = online ? '#FFD400' : 'rgba(255,255,255,0.45)';
   const html = `
@@ -98,14 +105,22 @@ export default function CourtsMap({ facilities }: Props) {
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
+    // If the search is purely digits, treat it as a ZIP prefix match.
+    const zipQuery = /^\d{3,5}$/.test(q) ? q : null;
     return facilities.filter((f) => {
       if (metro && f.metro !== metro) return false;
       if (!showOpen && f.category === 'Public Open') return false;
       if (!showManaged && f.category === 'Public Managed') return false;
       if (onlineOnly && !f.online_booking) return false;
       if (region && f.region !== region) return false;
-      if (q && !(f.name.toLowerCase().includes(q) || (f.city ?? '').toLowerCase().includes(q))) {
-        return false;
+      if (q) {
+        if (zipQuery) {
+          const zip = extractZip(f.address);
+          if (!zip || !zip.startsWith(zipQuery)) return false;
+        } else {
+          const hay = `${f.name} ${f.city ?? ''} ${f.address ?? ''}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
       }
       return true;
     });
@@ -318,7 +333,8 @@ function FilterControls({
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Court or city…"
+          placeholder="Court, city, or ZIP…"
+          inputMode="search"
           className="w-full rounded-md bg-ink-soft/80 border border-ink-line px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-hot-400"
         />
       </div>

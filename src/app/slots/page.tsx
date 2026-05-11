@@ -32,7 +32,13 @@ interface FacilityView extends FacilityRow {
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Courts & Reservations · Hotties That Hit' };
 
-async function loadData(region: string | null) {
+function extractZip(address: string | null): string | null {
+  if (!address) return null;
+  const m = address.match(/\b(\d{5})(?:-\d{4})?\b/);
+  return m ? m[1] : null;
+}
+
+async function loadData(region: string | null, zip: string | null) {
   const supabase = getServiceClient();
 
   const facQ = supabase
@@ -56,11 +62,27 @@ async function loadData(region: string | null) {
     new Set(allFacilities.map((f) => f.region).filter(Boolean) as string[])
   ).sort();
 
-  const inRegion = region
-    ? allFacilities.filter((f) => f.region === region)
-    : allFacilities;
+  const zips = Array.from(
+    new Set(
+      allFacilities
+        .map((f) => extractZip(f.address))
+        .filter((z): z is string => !!z)
+    )
+  ).sort();
 
-  const view: FacilityView[] = inRegion.map((f) => {
+  const zipTrim = zip?.trim() || null;
+
+  const filtered = allFacilities.filter((f) => {
+    if (region && f.region !== region) return false;
+    if (zipTrim) {
+      const fz = extractZip(f.address);
+      if (!fz) return false;
+      if (!fz.startsWith(zipTrim)) return false;
+    }
+    return true;
+  });
+
+  const view: FacilityView[] = filtered.map((f) => {
     const src = sources.get(f.source_id);
     return {
       ...f,
@@ -71,7 +93,7 @@ async function loadData(region: string | null) {
 
   view.sort((a, b) => a.name.localeCompare(b.name));
 
-  return { regions, facilities: view };
+  return { regions, zips, facilities: view };
 }
 
 export default async function SlotsPage({
