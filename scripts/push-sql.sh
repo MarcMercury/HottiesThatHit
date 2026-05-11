@@ -8,14 +8,16 @@ set -euo pipefail
 
 FILE="${1:?path to .sql file required}"
 
-# JSON-escape the file contents (no jq required).
-PAYLOAD=$(python3 -c 'import json,sys; print(json.dumps({"query": open(sys.argv[1]).read()}))' "$FILE")
+# JSON-escape the file contents to a temp file (avoids ARG_MAX on large SQL).
+PAYLOAD_FILE=$(mktemp)
+trap 'rm -f "$PAYLOAD_FILE" /tmp/push-sql.out' EXIT
+python3 -c 'import json,sys; open(sys.argv[2],"w").write(json.dumps({"query": open(sys.argv[1]).read()}))' "$FILE" "$PAYLOAD_FILE"
 
 HTTP_CODE=$(curl -sS -o /tmp/push-sql.out -w '%{http_code}' \
   -X POST "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
   -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
-  --data-binary "$PAYLOAD")
+  --data-binary "@$PAYLOAD_FILE")
 
 echo "==> $FILE  (HTTP $HTTP_CODE)"
 head -c 4000 /tmp/push-sql.out

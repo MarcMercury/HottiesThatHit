@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Logo } from './Logo';
 import { useAuth } from '@/lib/auth-context';
+import { isAdminEmail } from '@/lib/admin';
 
 const links = [
   { href: '/slots', label: 'Reservations' },
@@ -19,6 +20,7 @@ export function Navbar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const { user, profile, signOut, loading } = useAuth();
+  const isAdmin = isAdminEmail(user?.email);
 
   const handleSignOut = async () => {
     await signOut();
@@ -32,6 +34,18 @@ export function Navbar() {
         <Logo />
 
         <nav className="hidden md:flex items-center gap-1">
+          {!loading && user && (
+            <Link
+              href="/profile"
+              className={`rounded-full px-3 py-1.5 text-sm transition ${
+                pathname === '/profile'
+                  ? 'bg-hot-500/20 text-white'
+                  : 'text-white/80 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              My Profile
+            </Link>
+          )}
           {links.map((l) => {
             const active = pathname === l.href;
             return (
@@ -48,18 +62,6 @@ export function Navbar() {
               </Link>
             );
           })}
-          {profile?.is_admin && (
-            <Link
-              href="/admin"
-              className={`rounded-full px-3 py-1.5 text-sm transition ${
-                pathname?.startsWith('/admin')
-                  ? 'bg-hot-500/20 text-white'
-                  : 'text-white/70 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              Admin
-            </Link>
-          )}
 
           {!loading && !user && (
             <>
@@ -75,20 +77,24 @@ export function Navbar() {
             </>
           )}
           {!loading && user && (
-            <>
-              <Link
-                href="/profile"
-                className="rounded-full px-3 py-1.5 text-sm text-white/80 hover:text-white hover:bg-white/5"
-              >
-                My Profile
-              </Link>
-              <button
-                onClick={handleSignOut}
-                className="rounded-full px-3 py-1.5 text-sm text-white/60 hover:text-white hover:bg-white/5"
-              >
-                Sign out
-              </button>
-            </>
+            <button
+              onClick={handleSignOut}
+              className="rounded-full px-3 py-1.5 text-sm text-white/60 hover:text-white hover:bg-white/5"
+            >
+              Sign out
+            </button>
+          )}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className={`rounded-full px-3 py-1.5 text-sm transition ${
+                pathname?.startsWith('/admin')
+                  ? 'bg-hot-500/20 text-white'
+                  : 'text-white/70 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              Admin
+            </Link>
           )}
         </nav>
 
@@ -109,6 +115,15 @@ export function Navbar() {
 
       {open && (
         <nav className="md:hidden border-t border-ink-line bg-ink/95 px-4 py-3 space-y-1">
+          {!loading && user && (
+            <Link
+              href="/profile"
+              onClick={() => setOpen(false)}
+              className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+            >
+              My Profile
+            </Link>
+          )}
           {links.map((l) => (
             <Link
               key={l.href}
@@ -119,15 +134,6 @@ export function Navbar() {
               {l.label}
             </Link>
           ))}
-          {profile?.is_admin && (
-            <Link
-              href="/admin"
-              onClick={() => setOpen(false)}
-              className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
-            >
-              Admin
-            </Link>
-          )}
           {!loading && !user && (
             <>
               <Link
@@ -147,21 +153,21 @@ export function Navbar() {
             </>
           )}
           {!loading && user && (
-            <>
-              <Link
-                href="/profile"
-                onClick={() => setOpen(false)}
-                className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
-              >
-                My Profile
-              </Link>
-              <button
-                onClick={handleSignOut}
-                className="block w-full text-left rounded-md px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5"
-              >
-                Sign out
-              </button>
-            </>
+            <button
+              onClick={handleSignOut}
+              className="block w-full text-left rounded-md px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5"
+            >
+              Sign out
+            </button>
+          )}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+            >
+              Admin
+            </Link>
           )}
         </nav>
       )}

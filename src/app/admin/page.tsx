@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { getBrowserClient } from '@/lib/supabase-browser';
+import { isAdminEmail } from '@/lib/admin';
 
 interface AdminUser {
   id: string;
@@ -64,12 +65,12 @@ export default function AdminPage() {
       router.push('/login?next=/admin');
       return;
     }
-    if (profile && !profile.is_admin) {
+    if (!isAdminEmail(user.email)) {
       setErr('You are not an admin.');
       setUsers([]);
       return;
     }
-    if (profile?.is_admin) load();
+    load();
   }, [loading, user, profile, router, load]);
 
   const toggleAdmin = async (u: AdminUser) => {
