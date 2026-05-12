@@ -19,19 +19,30 @@ export async function POST(req: NextRequest) {
   let tourFilter: 'ATP' | 'WTA' | 'ANY' = 'ANY';
 
   const ctype = req.headers.get('content-type') || '';
-  if (ctype.includes('multipart/form-data')) {
-    const form = await req.formData();
-    const file = form.get('selfie');
-    const tour = (form.get('tour') as string | null) || 'ANY';
-    if (tour === 'ATP' || tour === 'WTA') tourFilter = tour;
-    if (file instanceof File) {
-      seed = `${file.name}|${file.size}|${file.type}`;
-    } else {
-      seed = String(Date.now());
+  try {
+    if (ctype.includes('application/json')) {
+      const body = (await req.json()) as {
+        tour?: string;
+        selfie?: { name?: string; size?: number; type?: string };
+      };
+      if (body.tour === 'ATP' || body.tour === 'WTA') tourFilter = body.tour;
+      if (body.selfie) {
+        const { name = '', size = 0, type = '' } = body.selfie;
+        seed = `${name}|${size}|${type}`;
+      }
+    } else if (ctype.includes('multipart/form-data')) {
+      const form = await req.formData();
+      const file = form.get('selfie');
+      const tour = (form.get('tour') as string | null) || 'ANY';
+      if (tour === 'ATP' || tour === 'WTA') tourFilter = tour;
+      if (file instanceof File) {
+        seed = `${file.name}|${file.size}|${file.type}`;
+      }
     }
-  } else {
-    seed = String(Date.now());
+  } catch {
+    // fall through to time-based seed
   }
+  if (!seed) seed = String(Date.now());
 
   const pool: TennisPlayer[] =
     tourFilter === 'ANY' ? PLAYERS : PLAYERS.filter((p) => p.tour === tourFilter);

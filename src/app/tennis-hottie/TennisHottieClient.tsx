@@ -44,10 +44,20 @@ export default function TennisHottieClient() {
     setLoading(true);
     setError(null);
     try {
-      const fd = new FormData();
-      fd.append('selfie', selfie);
-      fd.append('tour', tour);
-      const res = await fetch('/api/tennis-hottie', { method: 'POST', body: fd });
+      // Don't upload the image bytes — the API only needs lightweight metadata
+      // as a seed, and the photo is meant to stay in the browser.
+      const res = await fetch('/api/tennis-hottie', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          tour,
+          selfie: {
+            name: selfie.name,
+            size: selfie.size,
+            type: selfie.type,
+          },
+        }),
+      });
       if (!res.ok) throw new Error(`Request failed: ${res.status}`);
       const data = (await res.json()) as Result;
       // mini suspense
