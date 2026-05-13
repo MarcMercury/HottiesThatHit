@@ -42,7 +42,7 @@ export default function PrivacyPage() {
         <Block title="Your rights">
           <p>
             You may request deletion of your email and saved preferences at any time by
-            emailing <a href="mailto:privacy@hottiesthathit.com" className="text-hot-300">privacy@hottiesthathit.com</a>.
+            emailing <a href="mailto:privacy@slapp.fun" className="text-hot-300">privacy@slapp.fun</a>.
             We&apos;ll confirm deletion within 30 days.
           </p>
         </Block>
@@ -60,7 +60,7 @@ export default function PrivacyPage() {
 
         <Block title="Contact">
           <p>
-            Questions? <a href="mailto:privacy@hottiesthathit.com" className="text-hot-300">privacy@hottiesthathit.com</a>
+            Questions? <a href="mailto:privacy@slapp.fun" className="text-hot-300">privacy@slapp.fun</a>
           </p>
         </Block>
       </section>

@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   title: 'Hotties That Hit — Every open court in LA. One screen.',
   description:
     'Find open tennis courts, players, and tee times across Los Angeles. Hot pink courts only.',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hottiesthathit.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://slapp.fun'),
   openGraph: {
     title: 'Hotties That Hit',
     description: 'Every open court in LA. One screen.',

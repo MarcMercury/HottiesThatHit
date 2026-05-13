@@ -101,7 +101,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'No email on file' }, { status: 400 });
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hottiesthathit.com';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://slapp.fun';
   const redirectTo = `${siteUrl.replace(/\/$/, '')}/auth/callback`;
 
   // Generates a recovery link. If SMTP is configured on the Supabase project

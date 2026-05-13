@@ -4,17 +4,41 @@
 // Required env: UNSPLASH_ACCESS_KEY
 // Sign up: https://unsplash.com/developers
 //
-// Per Unsplash API guidelines, when you display a photo you MUST also
-// trigger the `links.download_location` endpoint and credit the photographer.
+// Per Unsplash API guidelines (https://help.unsplash.com/en/articles/2511315):
+//   1. Use the hotlinked URLs returned under `photo.urls`.
+//   2. When displaying a photo, ping `photo.links.download_location` so the
+//      photographer's download counter increments.
+//   3. Credit the photographer and Unsplash with UTM-tagged links back to
+//      their profile and unsplash.com (utm_source = your app, utm_medium = referral).
+
+// Identifies our app to Unsplash for the required UTM attribution links.
+// Must match the application name registered at
+// https://unsplash.com/oauth/applications/945424 (currently "HottieThatHit").
+export const UNSPLASH_UTM_SOURCE = 'HottieThatHit';
+
+function withUtm(rawUrl: string): string {
+  try {
+    const u = new URL(rawUrl);
+    u.searchParams.set('utm_source', UNSPLASH_UTM_SOURCE);
+    u.searchParams.set('utm_medium', 'referral');
+    return u.toString();
+  } catch {
+    return rawUrl;
+  }
+}
+
+// Public link to unsplash.com itself, UTM-tagged for attribution.
+export const UNSPLASH_HOME_URL = withUtm('https://unsplash.com');
 
 export interface UnsplashPhoto {
   id: string;
-  url: string;            // raw URL with sizing params
+  url: string;            // raw URL with sizing params (hotlinked from images.unsplash.com)
   thumb: string;
   alt: string;
   photographer: string;
-  photographerUrl: string;
-  downloadTrackUrl: string;
+  photographerUrl: string;       // UTM-tagged link to photographer's Unsplash profile
+  unsplashUrl: string;           // UTM-tagged link to unsplash.com
+  downloadTrackUrl: string;      // ping this once per display (see trackUnsplashDownload)
 }
 
 interface UnsplashSearchResp {
@@ -64,7 +88,8 @@ export async function findFacilityPhoto(query: string): Promise<UnsplashPhoto | 
     thumb: r.urls.thumb,
     alt: r.alt_description ?? r.description ?? query,
     photographer: r.user.name,
-    photographerUrl: r.user.links.html,
+    photographerUrl: withUtm(r.user.links.html),
+    unsplashUrl: UNSPLASH_HOME_URL,
     downloadTrackUrl: r.links.download_location,
   };
   cache.set(query, { at: Date.now(), data: photo });

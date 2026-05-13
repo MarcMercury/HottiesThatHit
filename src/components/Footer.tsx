@@ -22,7 +22,7 @@ export function Footer() {
           <p className="text-white/90 font-semibold mb-2">Company</p>
           <ul className="space-y-1.5 text-white/60">
             <li><Link href="/about" className="hover:text-hot-300">About</Link></li>
-            <li><a href="mailto:hello@hottiesthathit.com" className="hover:text-hot-300">Contact</a></li>
+            <li><a href="mailto:hello@slapp.fun" className="hover:text-hot-300">Contact</a></li>
           </ul>
         </div>
         <div>

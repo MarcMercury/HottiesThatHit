@@ -10,7 +10,7 @@ export default function TermsPage() {
       <section className="mx-auto max-w-3xl px-4 py-10 space-y-6 text-white/75 leading-relaxed">
         <Block title="Acceptance">
           <p>
-            By using hottiesthathit.com you agree to these terms. If you don&apos;t agree,
+            By using slapp.fun you agree to these terms. If you don&apos;t agree,
             please don&apos;t use the site.
           </p>
         </Block>
@@ -55,7 +55,7 @@ export default function TermsPage() {
 
         <Block title="Contact">
           <p>
-            <a href="mailto:hello@hottiesthathit.com" className="text-hot-300">hello@hottiesthathit.com</a>
+            <a href="mailto:hello@slapp.fun" className="text-hot-300">hello@slapp.fun</a>
           </p>
         </Block>
       </section>
