@@ -1,6 +1,5 @@
 import dynamic from 'next/dynamic';
 import { PageHeader } from '@/components/PageHeader';
-import FacilityPhoto from '@/components/FacilityPhoto';
 import { getServiceClient } from '@/lib/supabase';
 import type { Facility } from '@/components/CourtsMap';
 
@@ -53,13 +52,6 @@ export default async function CourtsPage() {
     nyc: facilities.filter((f) => f.metro === 'NYC').length,
   };
 
-  // Pick a "featured" facility to use as the hero image query. Falls back to
-  // a generic tennis query so the Unsplash credit is still visible (and the
-  // download endpoint still fires) even when the directory is empty.
-  const featured = facilities[0];
-  const photoQuery = featured ? `${featured.name} tennis court` : 'tennis court';
-  const photoCaption = featured?.name ?? 'Public tennis courts';
-
   return (
     <main>
       <PageHeader
@@ -71,12 +63,6 @@ export default async function CourtsPage() {
             : `Every public tennis court in LA + NYC. Map seeded from tennismaps.com.`
         }
       />
-
-      <section className="mx-auto max-w-7xl px-4 pt-4">
-        {/* Featured facility photo. Sourced from the Unsplash API with the
-            attribution + download tracking their API Guidelines require. */}
-        <FacilityPhoto query={photoQuery} caption={photoCaption} priority />
-      </section>
 
       <section className="mx-auto max-w-7xl px-4 py-6">
         {facilities.length === 0 ? (
