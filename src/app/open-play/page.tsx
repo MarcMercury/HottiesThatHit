@@ -29,18 +29,30 @@ async function loadInitial(): Promise<{
     .order('start_time', { ascending: true })
     .limit(200);
 
-  const facP = svc
-    .from('facilities')
-    .select('id, name, city, region, num_courts')
-    .eq('active', true)
-    .order('name')
-    .limit(10000);
+  // Paginate facilities — PostgREST caps responses at db.max_rows (1000 by
+  // default), so .limit() alone can't fetch all ~3k active facilities.
+  async function loadAllFacilities(): Promise<FacilityOption[]> {
+    const pageSize = 1000;
+    const out: FacilityOption[] = [];
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await svc
+        .from('facilities')
+        .select('id, name, city, region, num_courts')
+        .eq('active', true)
+        .order('name')
+        .range(from, from + pageSize - 1);
+      if (error || !data || data.length === 0) break;
+      out.push(...(data as FacilityOption[]));
+      if (data.length < pageSize) break;
+    }
+    return out;
+  }
 
-  const [evRes, facRes] = await Promise.all([evP, facP]);
+  const [evRes, facilities] = await Promise.all([evP, loadAllFacilities()]);
 
   return {
     events: (evRes.data ?? []) as unknown as OpenPlayEvent[],
-    facilities: (facRes.data ?? []) as FacilityOption[],
+    facilities,
   };
 }
 
