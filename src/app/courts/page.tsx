@@ -12,16 +12,28 @@ export const revalidate = 300;
 async function loadFacilities(): Promise<Facility[]> {
   try {
     const supabase = getServiceClient();
-    const { data: facilities, error } = await supabase
-      .from('facilities')
-      .select(
-        'id, source_id, external_id, name, address, city, lat, lng, num_courts, surface, lights, category, region, metro, phone, website, online_booking, facility_booking_url, active'
-      )
-      .eq('active', true)
-      .not('lat', 'is', null)
-      .not('lng', 'is', null)
-      .order('name');
-    if (error || !facilities) return [];
+
+    // Paginate — PostgREST caps each response at db.max_rows (1000), so a
+    // single query silently drops everything past row 1000.
+    const pageSize = 1000;
+    const rows: Array<Record<string, unknown>> = [];
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await supabase
+        .from('facilities')
+        .select(
+          'id, source_id, external_id, name, address, city, lat, lng, num_courts, surface, lights, category, region, metro, phone, website, online_booking, facility_booking_url, active'
+        )
+        .eq('active', true)
+        .not('lat', 'is', null)
+        .not('lng', 'is', null)
+        .order('name')
+        .range(from, from + pageSize - 1);
+      if (error || !data || data.length === 0) break;
+      rows.push(...(data as Array<Record<string, unknown>>));
+      if (data.length < pageSize) break;
+    }
+    if (rows.length === 0) return [];
+    const facilities = rows as unknown as Array<Facility & { source_id: string; facility_booking_url: string | null }>;
 
     const { data: sources } = await supabase
       .from('sources')
