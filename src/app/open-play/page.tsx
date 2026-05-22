@@ -34,7 +34,7 @@ async function loadInitial(): Promise<{
     .select('id, name, city, region, num_courts')
     .eq('active', true)
     .order('name')
-    .limit(2000);
+    .limit(10000);
 
   const [evRes, facRes] = await Promise.all([evP, facP]);
 
