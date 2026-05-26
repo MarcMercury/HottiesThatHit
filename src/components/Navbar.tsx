@@ -9,7 +9,6 @@ import { isAdminEmail } from '@/lib/admin';
 
 const links = [
   { href: '/courts', label: 'Find a Court' },
-  { href: '/open-play', label: 'Open Play' },
   { href: '/players', label: 'Find Players' },
   // Fun Extras handled separately
 ];
