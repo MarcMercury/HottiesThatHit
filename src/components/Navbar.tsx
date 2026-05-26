@@ -11,8 +11,7 @@ const links = [
   { href: '/courts', label: 'Find a Court' },
   { href: '/open-play', label: 'Open Play' },
   { href: '/players', label: 'Find Players' },
-  { href: '/matrix', label: 'Hot vs Hit' },
-  { href: '/tennis-hottie', label: 'What Tennis Hottie?' },
+  // Fun Extras handled separately
 ];
 
 export function Navbar() {
@@ -104,6 +103,7 @@ export function Navbar() {
               </Link>
             </>
           )}
+
           {links.map((l) => {
             const active = pathname === l.href;
             return (
@@ -120,6 +120,37 @@ export function Navbar() {
               </Link>
             );
           })}
+
+          {/* Fun Extras Dropdown */}
+          <div className="relative group">
+            <button
+              type="button"
+              className={`rounded-full px-3 py-1.5 text-sm transition flex items-center gap-1 ${
+                (pathname === '/matrix' || pathname === '/tennis-hottie')
+                  ? 'bg-hot-500/20 text-white'
+                  : 'text-white/70 hover:text-white hover:bg-white/5'
+              }`}
+              aria-haspopup="menu"
+              aria-expanded="false"
+            >
+              Fun Extras
+              <svg className="inline ml-1" width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <div className="absolute left-0 mt-2 min-w-[160px] rounded-lg bg-ink-soft/95 shadow-lg border border-ink-line z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity">
+              <Link
+                href="/matrix"
+                className="block px-4 py-2 text-sm text-white/90 hover:bg-hot-500/10"
+              >
+                Hot vs Hit
+              </Link>
+              <Link
+                href="/tennis-hottie"
+                className="block px-4 py-2 text-sm text-white/90 hover:bg-hot-500/10"
+              >
+                What Tennis Hottie?
+              </Link>
+            </div>
+          </div>
 
           {!loading && !user && (
             <>
@@ -221,6 +252,7 @@ export function Navbar() {
               Feed
             </Link>
           )}
+
           {links.map((l) => (
             <Link
               key={l.href}
@@ -231,6 +263,27 @@ export function Navbar() {
               {l.label}
             </Link>
           ))}
+
+          {/* Fun Extras Dropdown for mobile */}
+          <details>
+            <summary className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5 cursor-pointer select-none">Fun Extras</summary>
+            <div className="ml-4 mt-1 space-y-1">
+              <Link
+                href="/matrix"
+                onClick={() => setOpen(false)}
+                className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+              >
+                Hot vs Hit
+              </Link>
+              <Link
+                href="/tennis-hottie"
+                onClick={() => setOpen(false)}
+                className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+              >
+                What Tennis Hottie?
+              </Link>
+            </div>
+          </details>
           {!loading && !user && (
             <>
               <Link
