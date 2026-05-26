@@ -7,10 +7,15 @@ import { Logo } from './Logo';
 import { useAuth } from '@/lib/auth-context';
 import { isAdminEmail } from '@/lib/admin';
 
-const links = [
-  { href: '/courts', label: 'Find a Court' },
-  { href: '/players', label: 'Find Players' },
-  // Fun Extras handled separately
+// Nav order: My Profile, Feed, Find a Court, Play, Find Players, Match Journal, Fun Extras
+const navOrder = [
+  { type: 'profile' },
+  { type: 'feed' },
+  { type: 'courts' },
+  { type: 'play' },
+  { type: 'players' },
+  { type: 'journal' },
+  { type: 'fun' },
 ];
 
 export function Navbar() {
@@ -32,124 +37,158 @@ export function Navbar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Logo />
 
+
         <nav className="hidden md:flex items-center gap-1">
-          {!loading && user && (
-            <>
-              <Link
-                href="/profile"
-                className={`rounded-full px-3 py-1.5 text-sm transition ${
-                  pathname === '/profile'
-                    ? 'bg-hot-500/20 text-white'
-                    : 'text-white/80 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                My Profile
-              </Link>
-              <div className="relative group">
-                <button
-                  type="button"
-                  className={`rounded-full px-3 py-1.5 text-sm transition flex items-center gap-1 ${
-                    (pathname?.startsWith('/open-play') || pathname?.startsWith('/availability'))
+          {(!loading && user) && navOrder.map((item) => {
+            if (item.type === 'profile') {
+              return (
+                <Link
+                  key="profile"
+                  href="/profile"
+                  className={`rounded-full px-3 py-1.5 text-sm transition ${
+                    pathname === '/profile'
                       ? 'bg-hot-500/20 text-white'
                       : 'text-white/80 hover:text-white hover:bg-white/5'
                   }`}
-                  onClick={() => setPlayOpen((v) => !v)}
-                  onBlur={() => setTimeout(() => setPlayOpen(false), 150)}
-                  aria-haspopup="menu"
-                  aria-expanded={playOpen}
                 >
-                  Play
-                  <svg className="inline ml-1" width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </button>
-                {(playOpen) && (
-                  <div className="absolute left-0 mt-2 min-w-[160px] rounded-lg bg-ink-soft/95 shadow-lg border border-ink-line z-50">
+                  My Profile
+                </Link>
+              );
+            }
+            if (item.type === 'feed') {
+              return (
+                <Link
+                  key="feed"
+                  href="/feed"
+                  className={`rounded-full px-3 py-1.5 text-sm transition ${
+                    pathname?.startsWith('/feed')
+                      ? 'bg-hot-500/20 text-white'
+                      : 'text-white/80 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  Feed
+                </Link>
+              );
+            }
+            if (item.type === 'courts') {
+              return (
+                <Link
+                  key="courts"
+                  href="/courts"
+                  className={`rounded-full px-3 py-1.5 text-sm transition ${
+                    pathname === '/courts'
+                      ? 'bg-hot-500/20 text-white'
+                      : 'text-white/70 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  Find a Court
+                </Link>
+              );
+            }
+            if (item.type === 'play') {
+              return (
+                <div key="play" className="relative group">
+                  <button
+                    type="button"
+                    className={`rounded-full px-3 py-1.5 text-sm transition flex items-center gap-1 ${
+                      (pathname?.startsWith('/open-play') || pathname?.startsWith('/availability'))
+                        ? 'bg-hot-500/20 text-white'
+                        : 'text-white/80 hover:text-white hover:bg-white/5'
+                    }`}
+                    onClick={() => setPlayOpen((v) => !v)}
+                    onBlur={() => setTimeout(() => setPlayOpen(false), 150)}
+                    aria-haspopup="menu"
+                    aria-expanded={playOpen}
+                  >
+                    Play
+                    <svg className="inline ml-1" width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                  {(playOpen) && (
+                    <div className="absolute left-0 mt-2 min-w-[160px] rounded-lg bg-ink-soft/95 shadow-lg border border-ink-line z-50">
+                      <Link
+                        href="/open-play"
+                        className="block px-4 py-2 text-sm text-white/90 hover:bg-hot-500/10"
+                        onClick={() => setPlayOpen(false)}
+                      >
+                        Open Play
+                      </Link>
+                      <Link
+                        href="/availability"
+                        className="block px-4 py-2 text-sm text-white/90 hover:bg-hot-500/10"
+                        onClick={() => setPlayOpen(false)}
+                      >
+                        I&apos;m Free
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            if (item.type === 'players') {
+              return (
+                <Link
+                  key="players"
+                  href="/players"
+                  className={`rounded-full px-3 py-1.5 text-sm transition ${
+                    pathname === '/players'
+                      ? 'bg-hot-500/20 text-white'
+                      : 'text-white/70 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  Find Players
+                </Link>
+              );
+            }
+            if (item.type === 'journal') {
+              return (
+                <Link
+                  key="journal"
+                  href="/journal"
+                  className={`rounded-full px-3 py-1.5 text-sm transition ${
+                    pathname?.startsWith('/journal')
+                      ? 'bg-hot-500/20 text-white'
+                      : 'text-white/80 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  Match Journal
+                </Link>
+              );
+            }
+            if (item.type === 'fun') {
+              return (
+                <div key="fun" className="relative group">
+                  <button
+                    type="button"
+                    className={`rounded-full px-3 py-1.5 text-sm transition flex items-center gap-1 ${
+                      (pathname === '/matrix' || pathname === '/tennis-hottie')
+                        ? 'bg-hot-500/20 text-white'
+                        : 'text-white/70 hover:text-white hover:bg-white/5'
+                    }`}
+                    aria-haspopup="menu"
+                    aria-expanded="false"
+                  >
+                    Fun Extras
+                    <svg className="inline ml-1" width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                  <div className="absolute left-0 mt-2 min-w-[160px] rounded-lg bg-ink-soft/95 shadow-lg border border-ink-line z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity">
                     <Link
-                      href="/open-play"
+                      href="/matrix"
                       className="block px-4 py-2 text-sm text-white/90 hover:bg-hot-500/10"
-                      onClick={() => setPlayOpen(false)}
                     >
-                      Open Play
+                      Hot vs Hit
                     </Link>
                     <Link
-                      href="/availability"
+                      href="/tennis-hottie"
                       className="block px-4 py-2 text-sm text-white/90 hover:bg-hot-500/10"
-                      onClick={() => setPlayOpen(false)}
                     >
-                      I&apos;m Free
+                      What Tennis Hottie?
                     </Link>
                   </div>
-                )}
-              </div>
-              <Link
-                href="/journal"
-                className={`rounded-full px-3 py-1.5 text-sm transition ${
-                  pathname?.startsWith('/journal')
-                    ? 'bg-hot-500/20 text-white'
-                    : 'text-white/80 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                Match Journal
-              </Link>
-              <Link
-                href="/feed"
-                className={`rounded-full px-3 py-1.5 text-sm transition ${
-                  pathname?.startsWith('/feed')
-                    ? 'bg-hot-500/20 text-white'
-                    : 'text-white/80 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                Feed
-              </Link>
-            </>
-          )}
-
-          {links.map((l) => {
-            const active = pathname === l.href;
-            return (
-              <Link
-                key={l.href}
-                href={l.href}
-                className={`rounded-full px-3 py-1.5 text-sm transition ${
-                  active
-                    ? 'bg-hot-500/20 text-white'
-                    : 'text-white/70 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                {l.label}
-              </Link>
-            );
+                </div>
+              );
+            }
+            return null;
           })}
-
-          {/* Fun Extras Dropdown */}
-          <div className="relative group">
-            <button
-              type="button"
-              className={`rounded-full px-3 py-1.5 text-sm transition flex items-center gap-1 ${
-                (pathname === '/matrix' || pathname === '/tennis-hottie')
-                  ? 'bg-hot-500/20 text-white'
-                  : 'text-white/70 hover:text-white hover:bg-white/5'
-              }`}
-              aria-haspopup="menu"
-              aria-expanded="false"
-            >
-              Fun Extras
-              <svg className="inline ml-1" width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            <div className="absolute left-0 mt-2 min-w-[160px] rounded-lg bg-ink-soft/95 shadow-lg border border-ink-line z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity">
-              <Link
-                href="/matrix"
-                className="block px-4 py-2 text-sm text-white/90 hover:bg-hot-500/10"
-              >
-                Hot vs Hit
-              </Link>
-              <Link
-                href="/tennis-hottie"
-                className="block px-4 py-2 text-sm text-white/90 hover:bg-hot-500/10"
-              >
-                What Tennis Hottie?
-              </Link>
-            </div>
-          </div>
 
           {!loading && !user && (
             <>
