@@ -28,6 +28,7 @@ export function Navbar() {
     router.push('/');
   };
 
+  const [playOpen, setPlayOpen] = useState(false);
   return (
     <header className="sticky top-0 z-40 border-b border-ink-line/80 bg-ink/70 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
@@ -46,6 +47,41 @@ export function Navbar() {
               >
                 My Profile
               </Link>
+              <div className="relative group">
+                <button
+                  type="button"
+                  className={`rounded-full px-3 py-1.5 text-sm transition flex items-center gap-1 ${
+                    (pathname?.startsWith('/open-play') || pathname?.startsWith('/availability'))
+                      ? 'bg-hot-500/20 text-white'
+                      : 'text-white/80 hover:text-white hover:bg-white/5'
+                  }`}
+                  onClick={() => setPlayOpen((v) => !v)}
+                  onBlur={() => setTimeout(() => setPlayOpen(false), 150)}
+                  aria-haspopup="menu"
+                  aria-expanded={playOpen}
+                >
+                  Play
+                  <svg className="inline ml-1" width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </button>
+                {(playOpen) && (
+                  <div className="absolute left-0 mt-2 min-w-[160px] rounded-lg bg-ink-soft/95 shadow-lg border border-ink-line z-50">
+                    <Link
+                      href="/open-play"
+                      className="block px-4 py-2 text-sm text-white/90 hover:bg-hot-500/10"
+                      onClick={() => setPlayOpen(false)}
+                    >
+                      Open Play
+                    </Link>
+                    <Link
+                      href="/availability"
+                      className="block px-4 py-2 text-sm text-white/90 hover:bg-hot-500/10"
+                      onClick={() => setPlayOpen(false)}
+                    >
+                      I&apos;m Free
+                    </Link>
+                  </div>
+                )}
+              </div>
               <Link
                 href="/journal"
                 className={`rounded-full px-3 py-1.5 text-sm transition ${
@@ -65,16 +101,6 @@ export function Navbar() {
                 }`}
               >
                 Feed
-              </Link>
-              <Link
-                href="/availability"
-                className={`rounded-full px-3 py-1.5 text-sm transition ${
-                  pathname?.startsWith('/availability')
-                    ? 'bg-hot-500/20 text-white'
-                    : 'text-white/80 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                I&apos;m Free
               </Link>
             </>
           )}
@@ -157,6 +183,27 @@ export function Navbar() {
             </Link>
           )}
           {!loading && user && (
+            <details>
+              <summary className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5 cursor-pointer select-none">Play</summary>
+              <div className="ml-4 mt-1 space-y-1">
+                <Link
+                  href="/open-play"
+                  onClick={() => setOpen(false)}
+                  className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+                >
+                  Open Play
+                </Link>
+                <Link
+                  href="/availability"
+                  onClick={() => setOpen(false)}
+                  className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+                >
+                  I&apos;m Free
+                </Link>
+              </div>
+            </details>
+          )}
+          {!loading && user && (
             <Link
               href="/journal"
               onClick={() => setOpen(false)}
@@ -172,15 +219,6 @@ export function Navbar() {
               className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
             >
               Feed
-            </Link>
-          )}
-          {!loading && user && (
-            <Link
-              href="/availability"
-              onClick={() => setOpen(false)}
-              className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
-            >
-              I&apos;m Free
             </Link>
           )}
           {links.map((l) => (
