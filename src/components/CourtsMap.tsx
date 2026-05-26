@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Map as LMap, Marker as LMarker, LayerGroup } from 'leaflet';
 import { useFavorites } from '@/lib/favorites';
+import { getBrowserClient } from '@/lib/supabase-browser';
 
 export interface Facility {
   id: string;
@@ -219,23 +220,26 @@ export default function CourtsMap({ facilities }: Props) {
           const el = m.getPopup()?.getElement();
           if (!el) return;
           const btn = el.querySelector<HTMLButtonElement>('[data-fav]');
-          if (!btn) return;
-          const paint = (active: boolean) => {
-            btn.setAttribute('aria-pressed', String(active));
-            btn.title = !signedInRef.current
-              ? 'Sign in to save this court'
-              : active
-                ? 'Remove from favorites'
-                : 'Save to favorites';
-            btn.innerHTML = favoriteButtonInner(active);
-          };
-          paint(favRef.current.has(f.id));
-          btn.onclick = async (ev) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-            const next = await toggle(f.id);
-            paint(next);
-          };
+          if (btn) {
+            const paint = (active: boolean) => {
+              btn.setAttribute('aria-pressed', String(active));
+              btn.title = !signedInRef.current
+                ? 'Sign in to save this court'
+                : active
+                  ? 'Remove from favorites'
+                  : 'Save to favorites';
+              btn.innerHTML = favoriteButtonInner(active);
+            };
+            paint(favRef.current.has(f.id));
+            btn.onclick = async (ev) => {
+              ev.preventDefault();
+              ev.stopPropagation();
+              const next = await toggle(f.id);
+              paint(next);
+            };
+          }
+          // Async: fetch + render rating stars and lazy-load court notes.
+          wireRatingAndNotes(el, f.id, signedInRef.current).catch(() => undefined);
         });
         cluster.addLayer(m);
       }
@@ -682,7 +686,250 @@ function popupHtml(f: Facility, isFav: boolean): string {
   }
   const dirUrl = `https://www.google.com/maps/dir/?api=1&destination=${f.lat},${f.lng}`;
   parts.push(`<a href="${dirUrl}" target="_blank" rel="noopener" style="display:inline-block;margin:8px 0 0 6px;color:#525252;font:500 12px system-ui;">Directions ↗</a>`);
+
+  // --- Star rating + notes section (populated asynchronously on popupopen) ---
+  parts.push(`
+    <div data-rating-block style="margin-top:10px;padding-top:8px;border-top:1px solid #f1f1f1;font:12px system-ui;color:#525252;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <span data-rating-stars style="display:inline-flex;gap:1px;cursor:default;color:#d4d4d4;font-size:16px;line-height:1;">
+          ${'★'.repeat(0)}${'☆'.repeat(5)}
+        </span>
+        <span data-rating-summary style="font-size:11px;color:#737373;">…</span>
+      </div>
+    </div>
+    <div data-notes-block style="margin-top:8px;font:12px system-ui;color:#525252;">
+      <button type="button" data-notes-toggle style="background:none;border:none;padding:0;color:#be185d;cursor:pointer;font:600 12px system-ui;">
+        Court notes ▾
+      </button>
+      <div data-notes-body style="display:none;margin-top:6px;"></div>
+    </div>
+  `);
+
   return parts.join('');
+}
+
+// Lightweight DOM helpers shared by popupopen wiring.
+function setStarsDisplay(
+  starsEl: HTMLElement,
+  value: number,
+  hover: number | null,
+) {
+  const v = hover ?? value;
+  starsEl.innerHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    const span = document.createElement('span');
+    span.textContent = i <= v ? '★' : '☆';
+    span.dataset.star = String(i);
+    span.style.cursor = 'pointer';
+    span.style.color = i <= v ? '#FF1F8F' : '#d4d4d4';
+    span.style.padding = '0 1px';
+    starsEl.appendChild(span);
+  }
+}
+
+async function getAuthToken(): Promise<string | null> {
+  try {
+    const { data } = await getBrowserClient().auth.getSession();
+    return data.session?.access_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function wireRatingAndNotes(
+  popupEl: HTMLElement,
+  facilityId: string,
+  signedIn: boolean,
+) {
+  // ----- Rating -----
+  const ratingBlock = popupEl.querySelector<HTMLElement>('[data-rating-block]');
+  const starsEl = popupEl.querySelector<HTMLElement>('[data-rating-stars]');
+  const summaryEl = popupEl.querySelector<HTMLElement>('[data-rating-summary]');
+  if (ratingBlock && starsEl && summaryEl) {
+    const token = signedIn ? await getAuthToken() : null;
+    try {
+      const res = await fetch(`/api/facilities/${facilityId}/rating`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        cache: 'no-store',
+      });
+      const json = (await res.json()) as {
+        avg_stars: number | null;
+        rating_count: number;
+        my_stars: number | null;
+      };
+      let myStars = json.my_stars ?? 0;
+      const renderSummary = (avg: number | null, count: number) => {
+        if (count === 0) {
+          summaryEl.textContent = signedIn ? 'Tap to rate' : 'No ratings yet';
+        } else {
+          summaryEl.textContent = `${(avg ?? 0).toFixed(1)} (${count})`;
+        }
+      };
+      renderSummary(json.avg_stars, json.rating_count);
+      setStarsDisplay(starsEl, myStars, null);
+      if (signedIn) {
+        starsEl.title = 'Your rating';
+        starsEl.style.cursor = 'pointer';
+        starsEl.addEventListener('mouseleave', () => setStarsDisplay(starsEl, myStars, null));
+        starsEl.addEventListener('mousemove', (e) => {
+          const target = e.target as HTMLElement;
+          const n = Number(target.dataset?.star);
+          if (n >= 1 && n <= 5) setStarsDisplay(starsEl, myStars, n);
+        });
+        starsEl.addEventListener('click', async (e) => {
+          const target = e.target as HTMLElement;
+          const n = Number(target.dataset?.star);
+          if (!n) return;
+          // Click same star again to clear.
+          const next = n === myStars ? null : n;
+          const t = await getAuthToken();
+          const r = await fetch(`/api/facilities/${facilityId}/rating`, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              ...(t ? { Authorization: `Bearer ${t}` } : {}),
+            },
+            body: JSON.stringify({ stars: next }),
+          });
+          if (!r.ok) return;
+          myStars = next ?? 0;
+          setStarsDisplay(starsEl, myStars, null);
+          // Refresh summary.
+          const r2 = await fetch(`/api/facilities/${facilityId}/rating`, { cache: 'no-store' });
+          if (r2.ok) {
+            const j2 = (await r2.json()) as { avg_stars: number | null; rating_count: number };
+            renderSummary(j2.avg_stars, j2.rating_count);
+          }
+        });
+      } else {
+        starsEl.title = 'Sign in to rate this court';
+      }
+    } catch {
+      summaryEl.textContent = '';
+    }
+  }
+
+  // ----- Notes (lazy: only fetch when toggled open) -----
+  const toggle = popupEl.querySelector<HTMLButtonElement>('[data-notes-toggle]');
+  const body = popupEl.querySelector<HTMLElement>('[data-notes-body]');
+  if (!toggle || !body) return;
+  let loaded = false;
+  toggle.addEventListener('click', async () => {
+    const open = body.style.display !== 'none';
+    if (open) {
+      body.style.display = 'none';
+      toggle.textContent = 'Court notes ▾';
+      return;
+    }
+    body.style.display = 'block';
+    toggle.textContent = 'Court notes ▴';
+    if (loaded) return;
+    loaded = true;
+    body.innerHTML = '<div style="color:#737373;font-size:11px;">Loading…</div>';
+
+    const t = signedIn ? await getAuthToken() : null;
+    const res = await fetch(`/api/facilities/${facilityId}/notes`, {
+      headers: t ? { Authorization: `Bearer ${t}` } : {},
+      cache: 'no-store',
+    });
+    const json = (await res.json().catch(() => ({}))) as {
+      notes?: Array<{ id: string; body: string; approved_at: string | null }>;
+      my_pending?: Array<{ id: string; body: string; status: string }>;
+    };
+    const notes = json.notes ?? [];
+    const pending = json.my_pending ?? [];
+
+    const list = document.createElement('div');
+    if (notes.length === 0) {
+      const p = document.createElement('div');
+      p.style.cssText = 'color:#737373;font-size:11px;margin-bottom:6px;';
+      p.textContent = 'No approved notes yet.';
+      list.appendChild(p);
+    } else {
+      for (const n of notes) {
+        const item = document.createElement('div');
+        item.style.cssText =
+          'background:#fafafa;border:1px solid #f1f1f1;border-radius:6px;padding:6px 8px;margin-bottom:6px;color:#262626;font-size:12px;white-space:pre-wrap;';
+        item.textContent = n.body;
+        list.appendChild(item);
+      }
+    }
+    if (pending.length > 0) {
+      const head = document.createElement('div');
+      head.style.cssText = 'font-size:10px;color:#737373;margin-top:4px;';
+      head.textContent = 'Your pending notes (awaiting admin):';
+      list.appendChild(head);
+      for (const n of pending) {
+        const item = document.createElement('div');
+        item.style.cssText =
+          'background:#fff7ed;border:1px dashed #fbbf24;border-radius:6px;padding:6px 8px;margin-top:4px;color:#92400e;font-size:11px;white-space:pre-wrap;';
+        item.textContent = n.body;
+        list.appendChild(item);
+      }
+    }
+    body.innerHTML = '';
+    body.appendChild(list);
+
+    if (signedIn) {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'margin-top:6px;';
+      const ta = document.createElement('textarea');
+      ta.rows = 2;
+      ta.maxLength = 1000;
+      ta.placeholder = 'Share something useful about this court…';
+      ta.style.cssText =
+        'width:100%;box-sizing:border-box;border:1px solid #e5e5e5;border-radius:6px;padding:6px 8px;font:12px system-ui;color:#0a0a0a;background:#fff;resize:vertical;';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = 'Submit for review';
+      btn.style.cssText =
+        'margin-top:4px;padding:5px 10px;border-radius:9999px;background:#FF1F8F;color:#fff;border:none;font:600 11px system-ui;cursor:pointer;';
+      const msg = document.createElement('div');
+      msg.style.cssText = 'font-size:11px;color:#737373;margin-top:4px;';
+      btn.addEventListener('click', async () => {
+        const text = ta.value.trim();
+        if (!text) return;
+        btn.disabled = true;
+        msg.textContent = 'Submitting…';
+        const t2 = await getAuthToken();
+        const r = await fetch(`/api/facilities/${facilityId}/notes`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            ...(t2 ? { Authorization: `Bearer ${t2}` } : {}),
+          },
+          body: JSON.stringify({ body: text }),
+        });
+        btn.disabled = false;
+        if (!r.ok) {
+          const j = (await r.json().catch(() => ({}))) as { error?: string };
+          msg.textContent = j.error ?? 'Submit failed';
+          msg.style.color = '#dc2626';
+          return;
+        }
+        ta.value = '';
+        msg.textContent = 'Submitted — pending admin approval.';
+        msg.style.color = '#16a34a';
+        // Append to pending list.
+        const j = (await r.json()) as { note: { body: string } };
+        const item = document.createElement('div');
+        item.style.cssText =
+          'background:#fff7ed;border:1px dashed #fbbf24;border-radius:6px;padding:6px 8px;margin-top:4px;color:#92400e;font-size:11px;white-space:pre-wrap;';
+        item.textContent = j.note.body;
+        list.appendChild(item);
+      });
+      wrap.appendChild(ta);
+      wrap.appendChild(btn);
+      wrap.appendChild(msg);
+      body.appendChild(wrap);
+    } else {
+      const p = document.createElement('div');
+      p.style.cssText = 'font-size:11px;color:#737373;margin-top:6px;';
+      p.innerHTML =
+        '<a href="/login" style="color:#be185d;">Sign in</a> to add a note about this court.';
+      body.appendChild(p);
+    }
+  });
 }
 
 function escapeHtml(s: string): string {

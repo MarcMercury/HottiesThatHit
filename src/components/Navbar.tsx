@@ -35,16 +35,48 @@ export function Navbar() {
 
         <nav className="hidden md:flex items-center gap-1">
           {!loading && user && (
-            <Link
-              href="/profile"
-              className={`rounded-full px-3 py-1.5 text-sm transition ${
-                pathname === '/profile'
-                  ? 'bg-hot-500/20 text-white'
-                  : 'text-white/80 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              My Profile
-            </Link>
+            <>
+              <Link
+                href="/profile"
+                className={`rounded-full px-3 py-1.5 text-sm transition ${
+                  pathname === '/profile'
+                    ? 'bg-hot-500/20 text-white'
+                    : 'text-white/80 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                My Profile
+              </Link>
+              <Link
+                href="/journal"
+                className={`rounded-full px-3 py-1.5 text-sm transition ${
+                  pathname?.startsWith('/journal')
+                    ? 'bg-hot-500/20 text-white'
+                    : 'text-white/80 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                Match Journal
+              </Link>
+              <Link
+                href="/feed"
+                className={`rounded-full px-3 py-1.5 text-sm transition ${
+                  pathname?.startsWith('/feed')
+                    ? 'bg-hot-500/20 text-white'
+                    : 'text-white/80 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                Feed
+              </Link>
+              <Link
+                href="/availability"
+                className={`rounded-full px-3 py-1.5 text-sm transition ${
+                  pathname?.startsWith('/availability')
+                    ? 'bg-hot-500/20 text-white'
+                    : 'text-white/80 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                I&apos;m Free
+              </Link>
+            </>
           )}
           {links.map((l) => {
             const active = pathname === l.href;
@@ -122,6 +154,33 @@ export function Navbar() {
               className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
             >
               My Profile
+            </Link>
+          )}
+          {!loading && user && (
+            <Link
+              href="/journal"
+              onClick={() => setOpen(false)}
+              className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+            >
+              Match Journal
+            </Link>
+          )}
+          {!loading && user && (
+            <Link
+              href="/feed"
+              onClick={() => setOpen(false)}
+              className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+            >
+              Feed
+            </Link>
+          )}
+          {!loading && user && (
+            <Link
+              href="/availability"
+              onClick={() => setOpen(false)}
+              className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+            >
+              I&apos;m Free
             </Link>
           )}
           {links.map((l) => (

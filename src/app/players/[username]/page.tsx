@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getServiceClient } from '@/lib/supabase';
+import { PlayerSocial } from './PlayerSocial';
 
 interface Props {
   params: { username: string };
@@ -81,6 +82,8 @@ export default async function PlayerProfilePage({ params }: Props) {
           <p className="text-white/80 whitespace-pre-wrap text-sm">{data.bio}</p>
         </section>
       )}
+
+      <PlayerSocial username={data.username} />
 
       {favorites.length > 0 && (
         <section className="card mt-6 p-6">

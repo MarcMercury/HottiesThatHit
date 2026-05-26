@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { getBrowserClient } from '@/lib/supabase-browser';
 import { isAdminEmail } from '@/lib/admin';
+import { CourtNotesAdminTab } from './CourtNotesAdminTab';
 
 interface AdminUser {
   id: string;
@@ -29,6 +30,7 @@ export default function AdminPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [tab, setTab] = useState<'users' | 'notes'>('users');
 
   const authedFetch = useCallback(
     async (input: RequestInfo, init?: RequestInit) => {
@@ -160,10 +162,37 @@ export default function AdminPage() {
             {users.length} user{users.length === 1 ? '' : 's'}
           </p>
         </div>
-        <button onClick={load} disabled={refreshing} className="btn-ghost disabled:opacity-50">
-          {refreshing ? 'Refreshing…' : 'Refresh'}
+        {tab === 'users' && (
+          <button onClick={load} disabled={refreshing} className="btn-ghost disabled:opacity-50">
+            {refreshing ? 'Refreshing…' : 'Refresh'}
+          </button>
+        )}
+      </div>
+
+      <div className="mt-6 inline-flex rounded-full border border-ink-line bg-ink-soft/60 p-1 text-xs font-semibold">
+        <button
+          type="button"
+          onClick={() => setTab('users')}
+          className={`px-3 py-1.5 rounded-full transition ${
+            tab === 'users' ? 'bg-hot-500 text-white' : 'text-white/70 hover:text-white'
+          }`}
+        >
+          Users
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('notes')}
+          className={`px-3 py-1.5 rounded-full transition ${
+            tab === 'notes' ? 'bg-hot-500 text-white' : 'text-white/70 hover:text-white'
+          }`}
+        >
+          Court notes
         </button>
       </div>
+
+      {tab === 'notes' && <CourtNotesAdminTab />}
+      {tab === 'users' && (
+        <>
 
       {err && (
         <div className="card mt-6 border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
@@ -283,6 +312,8 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
+        </>
+      )}
     </main>
   );
 }
