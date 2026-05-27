@@ -291,16 +291,115 @@ export function Navbar() {
             </Link>
           )}
 
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              onClick={() => setOpen(false)}
-              className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
-            >
-              {l.label}
-            </Link>
-          ))}
+          {(!loading && user) && navOrder.map((item) => {
+            if (item.type === 'profile') {
+              return (
+                <Link
+                  key="profile"
+                  href="/profile"
+                  onClick={() => setOpen(false)}
+                  className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+                >
+                  My Profile
+                </Link>
+              );
+            }
+            if (item.type === 'feed') {
+              return (
+                <Link
+                  key="feed"
+                  href="/feed"
+                  onClick={() => setOpen(false)}
+                  className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+                >
+                  Feed
+                </Link>
+              );
+            }
+            if (item.type === 'courts') {
+              return (
+                <Link
+                  key="courts"
+                  href="/courts"
+                  onClick={() => setOpen(false)}
+                  className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+                >
+                  Find a Court
+                </Link>
+              );
+            }
+            if (item.type === 'play') {
+              return (
+                <details key="play">
+                  <summary className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5 cursor-pointer select-none">Play</summary>
+                  <div className="ml-4 mt-1 space-y-1">
+                    <Link
+                      href="/open-play"
+                      onClick={() => setOpen(false)}
+                      className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+                    >
+                      Open Play
+                    </Link>
+                    <Link
+                      href="/availability"
+                      onClick={() => setOpen(false)}
+                      className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+                    >
+                      I&apos;m Free
+                    </Link>
+                  </div>
+                </details>
+              );
+            }
+            if (item.type === 'players') {
+              return (
+                <Link
+                  key="players"
+                  href="/players"
+                  onClick={() => setOpen(false)}
+                  className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+                >
+                  Find Players
+                </Link>
+              );
+            }
+            if (item.type === 'journal') {
+              return (
+                <Link
+                  key="journal"
+                  href="/journal"
+                  onClick={() => setOpen(false)}
+                  className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+                >
+                  Match Journal
+                </Link>
+              );
+            }
+            if (item.type === 'fun') {
+              return (
+                <details key="fun">
+                  <summary className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5 cursor-pointer select-none">Fun Extras</summary>
+                  <div className="ml-4 mt-1 space-y-1">
+                    <Link
+                      href="/matrix"
+                      onClick={() => setOpen(false)}
+                      className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+                    >
+                      Hot vs Hit
+                    </Link>
+                    <Link
+                      href="/tennis-hottie"
+                      onClick={() => setOpen(false)}
+                      className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+                    >
+                      What Tennis Hottie?
+                    </Link>
+                  </div>
+                </details>
+              );
+            }
+            return null;
+          })}
 
           {/* Fun Extras Dropdown for mobile */}
           <details>
