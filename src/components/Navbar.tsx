@@ -32,6 +32,7 @@ export function Navbar() {
   };
 
   const [playOpen, setPlayOpen] = useState(false);
+  const [funOpen, setFunOpen] = useState(false);
   return (
     <header className="sticky top-0 z-40 border-b border-ink-line/80 bg-ink/70 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
@@ -156,7 +157,7 @@ export function Navbar() {
             }
             if (item.type === 'fun') {
               return (
-                <div key="fun" className="relative group">
+                <div key="fun" className="relative">
                   <button
                     type="button"
                     className={`rounded-full px-3 py-1.5 text-sm transition flex items-center gap-1 ${
@@ -165,25 +166,36 @@ export function Navbar() {
                         : 'text-white/70 hover:text-white hover:bg-white/5'
                     }`}
                     aria-haspopup="menu"
-                    aria-expanded="false"
+                    aria-expanded={funOpen}
+                    onClick={() => setFunOpen((v) => !v)}
+                    onBlur={() => setTimeout(() => setFunOpen(false), 150)}
+                    onFocus={() => setFunOpen(true)}
                   >
                     Fun Extras
                     <svg className="inline ml-1" width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </button>
-                  <div className="absolute left-0 mt-2 min-w-[160px] rounded-lg bg-ink-soft/95 shadow-lg border border-ink-line z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity">
-                    <Link
-                      href="/matrix"
-                      className="block px-4 py-2 text-sm text-white/90 hover:bg-hot-500/10"
+                  {funOpen && (
+                    <div
+                      className="absolute left-0 mt-2 min-w-[160px] rounded-lg bg-ink-soft/95 shadow-lg border border-ink-line z-50"
+                      onMouseEnter={() => setFunOpen(true)}
+                      onMouseLeave={() => setFunOpen(false)}
                     >
-                      Hot vs Hit
-                    </Link>
-                    <Link
-                      href="/tennis-hottie"
-                      className="block px-4 py-2 text-sm text-white/90 hover:bg-hot-500/10"
-                    >
-                      What Tennis Hottie?
-                    </Link>
-                  </div>
+                      <Link
+                        href="/matrix"
+                        className="block px-4 py-2 text-sm text-white/90 hover:bg-hot-500/10"
+                        onClick={() => setFunOpen(false)}
+                      >
+                        Hot vs Hit
+                      </Link>
+                      <Link
+                        href="/tennis-hottie"
+                        className="block px-4 py-2 text-sm text-white/90 hover:bg-hot-500/10"
+                        onClick={() => setFunOpen(false)}
+                      >
+                        What Tennis Hottie?
+                      </Link>
+                    </div>
+                  )}
                 </div>
               );
             }
