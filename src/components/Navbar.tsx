@@ -261,55 +261,6 @@ export function Navbar() {
 
       {open && (
         <nav className="md:hidden border-t border-ink-line bg-ink/95 px-4 py-3 space-y-1">
-          {!loading && user && (
-            <Link
-              href="/profile"
-              onClick={() => setOpen(false)}
-              className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
-            >
-              My Profile
-            </Link>
-          )}
-          {!loading && user && (
-            <details>
-              <summary className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5 cursor-pointer select-none">Play</summary>
-              <div className="ml-4 mt-1 space-y-1">
-                <Link
-                  href="/open-play"
-                  onClick={() => setOpen(false)}
-                  className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
-                >
-                  Open Play
-                </Link>
-                <Link
-                  href="/availability"
-                  onClick={() => setOpen(false)}
-                  className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
-                >
-                  I&apos;m Free
-                </Link>
-              </div>
-            </details>
-          )}
-          {!loading && user && (
-            <Link
-              href="/journal"
-              onClick={() => setOpen(false)}
-              className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
-            >
-              Match Journal
-            </Link>
-          )}
-          {!loading && user && (
-            <Link
-              href="/feed"
-              onClick={() => setOpen(false)}
-              className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
-            >
-              Feed
-            </Link>
-          )}
-
           {(!loading && user) && navOrder.map((item) => {
             if (item.type === 'profile') {
               return (
@@ -427,33 +378,6 @@ export function Navbar() {
             return null;
           })}
 
-          {/* Fun Extras Dropdown for mobile */}
-          <details>
-            <summary className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5 cursor-pointer select-none">Fun Extras</summary>
-            <div className="ml-4 mt-1 space-y-1">
-              <Link
-                href="/matrix"
-                onClick={() => setOpen(false)}
-                className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
-              >
-                Hot vs Hit
-              </Link>
-              <Link
-                href="/tennis-hottie"
-                onClick={() => setOpen(false)}
-                className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
-              >
-                What Tennis Hottie?
-              </Link>
-              <Link
-                href="/make-me-a-hottie"
-                onClick={() => setOpen(false)}
-                className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
-              >
-                Make Me a Hottie
-              </Link>
-            </div>
-          </details>
           {!loading && !user && (
             <>
               <Link
