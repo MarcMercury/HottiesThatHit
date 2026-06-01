@@ -161,7 +161,7 @@ export function Navbar() {
                   <button
                     type="button"
                     className={`rounded-full px-3 py-1.5 text-sm transition flex items-center gap-1 ${
-                      (pathname === '/matrix' || pathname === '/tennis-hottie')
+                      (pathname === '/matrix' || pathname === '/tennis-hottie' || pathname === '/make-me-a-hottie')
                         ? 'bg-hot-500/20 text-white'
                         : 'text-white/70 hover:text-white hover:bg-white/5'
                     }`}
@@ -193,6 +193,13 @@ export function Navbar() {
                         onClick={() => setFunOpen(false)}
                       >
                         What Tennis Hottie?
+                      </Link>
+                      <Link
+                        href="/make-me-a-hottie"
+                        className="block px-4 py-2 text-sm text-white/90 hover:bg-hot-500/10"
+                        onClick={() => setFunOpen(false)}
+                      >
+                        Make Me a Hottie
                       </Link>
                     </div>
                   )}
@@ -406,6 +413,13 @@ export function Navbar() {
                     >
                       What Tennis Hottie?
                     </Link>
+                    <Link
+                      href="/make-me-a-hottie"
+                      onClick={() => setOpen(false)}
+                      className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+                    >
+                      Make Me a Hottie
+                    </Link>
                   </div>
                 </details>
               );
@@ -430,6 +444,13 @@ export function Navbar() {
                 className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
               >
                 What Tennis Hottie?
+              </Link>
+              <Link
+                href="/make-me-a-hottie"
+                onClick={() => setOpen(false)}
+                className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+              >
+                Make Me a Hottie
               </Link>
             </div>
           </details>
