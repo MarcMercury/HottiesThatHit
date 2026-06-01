@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOpenAI } from '@/lib/openai';
 
 export const runtime = 'nodejs';
-
-// Max 8 MB image upload
-export const config = { api: { bodyParser: false } };
+export const maxDuration = 60;
 
 const POSES = [
   'walking confidently toward camera, racket over shoulder',
