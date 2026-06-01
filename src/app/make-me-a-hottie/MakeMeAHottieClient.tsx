@@ -13,9 +13,12 @@ const LOADING_LINES = [
   'Finalizing your court fit…',
 ];
 
+type Gender = 'female' | 'male';
+
 export default function MakeMeAHottieClient() {
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [gender, setGender] = useState<Gender | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingLine, setLoadingLine] = useState(LOADING_LINES[0]);
   const [result, setResult] = useState<string | null>(null); // base64 image
@@ -55,6 +58,7 @@ export default function MakeMeAHottieClient() {
     try {
       const form = new FormData();
       form.append('image', photo);
+      if (gender) form.append('gender', gender);
 
       const res = await fetch('/api/make-me-a-hottie', {
         method: 'POST',
@@ -189,11 +193,39 @@ export default function MakeMeAHottieClient() {
               <div className="rounded-lg bg-ink/60 px-3 py-2">✦ Every gen is unique</div>
             </div>
 
+            {/* Gender selector — picks wardrobe + body styling */}
+            <div className="mt-5">
+              <p className="text-center text-xs uppercase tracking-[0.2em] text-white/50 mb-2">
+                Style as
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                {(['female', 'male'] as Gender[]).map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setGender(g)}
+                    className={`min-w-[120px] rounded-full px-5 py-2.5 text-sm font-semibold uppercase tracking-wider transition border ${
+                      gender === g
+                        ? 'bg-hot-500 text-white border-hot-400 shadow-glow-sm'
+                        : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    {g === 'female' ? '♀ Female' : '♂ Male'}
+                  </button>
+                ))}
+              </div>
+              {!gender && (
+                <p className="mt-2 text-center text-xs text-white/40">
+                  Pick one so the AI dresses you correctly.
+                </p>
+              )}
+            </div>
+
             {/* Actions */}
             <div className="mt-5 flex flex-col sm:flex-row gap-3">
               <button
                 type="button"
-                disabled={!photo || loading}
+                disabled={!photo || !gender || loading}
                 onClick={generate}
                 className="flex-1 rounded-full bg-hot-500 hover:bg-hot-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 transition shadow-glow-sm flex items-center justify-center gap-2"
               >
