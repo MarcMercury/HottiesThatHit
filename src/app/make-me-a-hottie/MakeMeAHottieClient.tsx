@@ -41,6 +41,40 @@ export default function MakeMeAHottieClient() {
     if (f && f.type.startsWith('image/')) handleFile(f);
   };
 
+  // Downscale to max 1024px on the longest side and re-encode as JPEG.
+  // Cuts upload time and helps gpt-image-1 process faster (avoiding 504s).
+  const compressImage = async (file: File): Promise<Blob> => {
+    const MAX_DIM = 1024;
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new window.Image();
+        el.onload = () => resolve(el);
+        el.onerror = reject;
+        el.src = url;
+      });
+      const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+
+      // If it's already small AND already a jpeg/png under 2MB, just send as-is.
+      if (scale === 1 && file.size < 2 * 1024 * 1024) return file;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return file;
+      ctx.drawImage(img, 0, 0, w, h);
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, 'image/jpeg', 0.85),
+      );
+      return blob ?? file;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  };
+
   const generate = async () => {
     if (!photo) return;
     setLoading(true);
@@ -56,8 +90,10 @@ export default function MakeMeAHottieClient() {
     }, 2500);
 
     try {
+      const compressed = await compressImage(photo);
+
       const form = new FormData();
-      form.append('image', photo);
+      form.append('image', compressed, 'upload.jpg');
       if (gender) form.append('gender', gender);
 
       const res = await fetch('/api/make-me-a-hottie', {
@@ -66,6 +102,11 @@ export default function MakeMeAHottieClient() {
       });
 
       if (!res.ok) {
+        if (res.status === 504) {
+          throw new Error(
+            'The AI took too long this time. The servers are warm now — please tap Generate again.',
+          );
+        }
         const body = await res.json().catch(() => ({})) as { error?: string };
         throw new Error(body.error ?? `Request failed (${res.status})`);
       }

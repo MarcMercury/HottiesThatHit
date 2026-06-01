@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOpenAI } from '@/lib/openai';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+// gpt-image-1 edits routinely take 60-120s. Vercel Pro allows up to 300s.
+export const maxDuration = 300;
 
 type Gender = 'female' | 'male';
 
